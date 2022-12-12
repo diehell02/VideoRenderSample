@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="libyuv">
+      <UniqueIdentifier>{7ca9c372-7887-4849-adef-3e1e07db9c18}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="NativeMethods.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="libyuv\include\libyuv\basic_types.h">
+      <Filter>libyuv</Filter>
+    </ClInclude>
+    <ClInclude Include="libyuv\include\libyuv\convert_argb.h">
+      <Filter>libyuv</Filter>
+    </ClInclude>
+    <ClInclude Include="libyuv\include\libyuv\cpu_id.h">
+      <Filter>libyuv</Filter>
+    </ClInclude>
+    <ClInclude Include="libyuv\include\libyuv\planar_functions.h">
+      <Filter>libyuv</Filter>
+    </ClInclude>
+    <ClInclude Include="libyuv\include\libyuv\row.h">
+      <Filter>libyuv</Filter>
+    </ClInclude>
+    <ClInclude Include="libyuv\include\libyuv\scale.h">
+      <Filter>libyuv</Filter>
+    </ClInclude>
+    <ClInclude Include="libyuv\include\libyuv\scale_row.h">
+      <Filter>libyuv</Filter>
+    </ClInclude>
+    <ClInclude Include="libyuv\include\libyuv\version.h">
+      <Filter>libyuv</Filter>
+    </ClInclude>
+    <ClInclude Include="libyuv\include\libyuv.h">
+      <Filter>libyuv</Filter>
+    </ClInclude>
+    <ClInclude Include="FrameConverter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="NativeMethods.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="libyuv\source\convert_argb.cc">
+      <Filter>libyuv</Filter>
+    </ClCompile>
+    <ClCompile Include="libyuv\source\cpu_id.cc">
+      <Filter>libyuv</Filter>
+    </ClCompile>
+    <ClCompile Include="libyuv\source\planar_functions.cc">
+      <Filter>libyuv</Filter>
+    </ClCompile>
+    <ClCompile Include="libyuv\source\row_common.cc">
+      <Filter>libyuv</Filter>
+    </ClCompile>
+    <ClCompile Include="libyuv\source\scale.cc">
+      <Filter>libyuv</Filter>
+    </ClCompile>
+    <ClCompile Include="libyuv\source\scale_common.cc">
+      <Filter>libyuv</Filter>
+    </ClCompile>
+    <ClCompile Include="FrameConverter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
