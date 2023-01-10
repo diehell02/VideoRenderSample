@@ -5,10 +5,12 @@
     <TargetFramework>net6.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Render.Interop\Render.Interop.vcxproj" />
+    <ProjectReference Include="..\Render.Interop\swig\Render.InteropCs.csproj" />
     <ProjectReference Include="..\Render.Source\Render.Source.csproj" />
   </ItemGroup>
 

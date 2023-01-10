@@ -5,7 +5,6 @@ using System.Text;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows;
-using Render.Interop;
 using System.Runtime.InteropServices;
 
 namespace WPFSample
@@ -16,11 +15,12 @@ namespace WPFSample
         private ushort _width;
         private ushort _height;
         private bool _isFilled = false;
+
         private FrameConverter _frameConverter = new FrameConverter();
         private bool _isCleaned = false;
         private Int32Rect _rect;
         private int _bufferSize;
-        private object _lockObj = new object();
+        private readonly object _lockObj = new();
         private IntPtr _tempYPtr;
         private uint _tempYStride;
         private uint _tempYLength;

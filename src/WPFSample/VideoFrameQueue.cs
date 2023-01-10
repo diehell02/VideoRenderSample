@@ -1,5 +1,4 @@
-﻿using Render.Interop;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -39,9 +38,12 @@ namespace WPFSample
             buffer.UPtr = buffer.YPtr + (int)ySize;
             buffer.VPtr = buffer.YPtr + (int)ySize + (int)uSize;
 
-            NativeMethods.Memcpy(buffer.YPtr, item.YPtr, ySize);
-            NativeMethods.Memcpy(buffer.YPtr + (int)ySize, item.UPtr, uSize);
-            NativeMethods.Memcpy(buffer.YPtr + (int)ySize + (int)uSize, item.VPtr, vSize);
+            unsafe
+            {
+                Buffer.MemoryCopy((void*)item.YPtr, (void*)buffer.YPtr, ySize, ySize);
+                Buffer.MemoryCopy((void*)item.UPtr, (void*)(buffer.YPtr + (int)ySize), uSize, uSize);
+                Buffer.MemoryCopy((void*)item.VPtr, (void*)(buffer.YPtr + (int)ySize + (int)uSize), vSize, vSize);
+            }
         }
 
         protected override void CleanCacheItem(VideoFrame buffer)

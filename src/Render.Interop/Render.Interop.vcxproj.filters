@@ -18,9 +18,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="NativeMethods.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="libyuv\include\libyuv\basic_types.h">
       <Filter>libyuv</Filter>
     </ClInclude>
@@ -53,9 +50,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="NativeMethods.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="libyuv\source\convert_argb.cc">
       <Filter>libyuv</Filter>
     </ClCompile>
@@ -77,5 +71,11 @@
     <ClCompile Include="FrameConverter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FrameConverter_wrap.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="FrameConverter.i" />
   </ItemGroup>
 </Project>

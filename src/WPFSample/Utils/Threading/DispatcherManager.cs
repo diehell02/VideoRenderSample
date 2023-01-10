@@ -11,7 +11,7 @@ using System.Windows.Threading;
 
 namespace WPFSample.Utils.Threading
 {
-    internal class DispatcherManager
+    internal static class DispatcherManager
     {
         private class RenderingEventSource
         {
@@ -89,17 +89,22 @@ namespace WPFSample.Utils.Threading
         }
 
         private const string RENDER_THREAD_NAME = "Render Thread";
-        private const int MAX_DISPATCHER_NUMBER = 16;
 
+        private static int s_maxDispatcherNumber = Environment.ProcessorCount;
         private static readonly Dictionary<int, RenderingEventSource> s_threadActionDic = new();
         private static readonly object s_lock = new();
         private static readonly Dictionary<Dispatcher, int> s_dispatcherDic= new();
+
+        static DispatcherManager()
+        {
+
+        }
 
         public static Dispatcher? CreateRenderDispatcher()
         {
             try
             {
-                if (s_dispatcherDic.Count > MAX_DISPATCHER_NUMBER)
+                if (s_dispatcherDic.Count > s_maxDispatcherNumber)
                 {
                     int minNumber = int.MaxValue;
                     Dispatcher? dispatcher = null;
