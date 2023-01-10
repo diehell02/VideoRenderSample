@@ -1,2 +1,3 @@
-src/Render.Interop/swig
-src/Render.Interop/FrameConverter_wrap.cxx
+src/Render.Interop/swig/*
+!src/Render.Interop/swig/*.csproj
+src/Render.Interop/*.cxx
