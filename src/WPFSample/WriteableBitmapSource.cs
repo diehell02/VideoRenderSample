@@ -6,6 +6,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
+using WPFSample.Utils.Threading;
 
 namespace WPFSample
 {
@@ -120,11 +122,13 @@ namespace WPFSample
             {
                 if (_isCleaned)
                 {
+                    Trace.WriteLine($"_isCleaned is true, return");
                     return;
                 }
 
                 if (_imageSource is null)
                 {
+                    Trace.WriteLine($"_imageSource is null, return");
                     return;
                 }
 
@@ -154,11 +158,13 @@ namespace WPFSample
             {
                 if (_isCleaned)
                 {
+                    Trace.WriteLine($"_isCleaned is true, return");
                     return;
                 }
 
                 if (_imageSource is null)
                 {
+                    Trace.WriteLine($"_imageSource is null, return");
                     return;
                 }
 
@@ -179,6 +185,7 @@ namespace WPFSample
         {
             if (_isCleaned)
             {
+                Trace.WriteLine($"_isCleaned is true, return");
                 return;
             }
 
@@ -189,6 +196,7 @@ namespace WPFSample
 
             if (_imageSource is null)
             {
+                Trace.WriteLine($"_imageSource is null, return");
                 return;
             }
 
@@ -217,5 +225,34 @@ namespace WPFSample
                 }
             }
         }
+
+        public void ClearScreen()
+        {
+            _imageSource?.Dispatcher.SafeInvokeAsync(() =>
+            {
+                lock (_lockObj)
+                {
+                    if (_isCleaned)
+                    {
+                        Trace.WriteLine($"_isCleaned is true, return");
+                        return;
+                    }
+
+                    if (_imageSource is null)
+                    {
+                        Trace.WriteLine($"_imageSource is null, return");
+                        return;
+                    }
+
+                    Trace.WriteLine($"Clear Screen");
+                    _imageSource.Lock();
+                    byte[] bytes = new byte[_bufferSize];
+                    Marshal.Copy(bytes, 0, _imageSource.BackBuffer, _bufferSize);
+                    _imageSource.AddDirtyRect(new Int32Rect(0, 0, _width, _height));
+                    _imageSource.Unlock();
+                }
+            }, System.Windows.Threading.DispatcherPriority.Send);
+        }
+
     }
 }

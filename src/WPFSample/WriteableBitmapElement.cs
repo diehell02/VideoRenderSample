@@ -9,10 +9,9 @@ namespace WPFSample
 {
     internal class WriteableBitmapElement : VideoElement
     {
-        public WriteableBitmapElement(bool autoResize)
+        public WriteableBitmapElement()
         {
             _render = new WriteableBitmapSource();
-            _autoResize = autoResize;
         }
     }
 }

@@ -9,6 +9,7 @@ using System.Windows;
 using WPFSample.Utils.Threading;
 using System.Diagnostics;
 using System.Windows.Media.Media3D;
+using Render.Source;
 
 namespace WPFSample
 {
@@ -20,7 +21,17 @@ namespace WPFSample
             DependencyProperty.Register(
                 nameof(AutoResize),
                 typeof(bool),
-                typeof(VideoView));
+                typeof(VideoView),
+                new PropertyMetadata(false, (d, e) =>
+                {
+                    if (d is VideoView videoView && videoView.Child is VideoElement videoElement)
+                    {
+                        _ = videoElement.Dispatcher.InvokeAsync(() =>
+                        {
+                            videoElement.AutoResize = (bool)e.NewValue;
+                        });
+                    }
+                }));
 
         public static readonly DependencyProperty StretchProperty =
             DependencyProperty.Register(
@@ -31,7 +42,7 @@ namespace WPFSample
                 {
                     if (d is VideoView videoView && videoView.Child is VideoElement videoElement)
                     {
-                        _ = videoElement.Dispatcher.InvokeAsync(() =>
+                        _ = videoElement.Dispatcher.SafeInvokeAsync(() =>
                         {
                             videoElement.Stretch = (Stretch)e.NewValue;
                         });
@@ -63,13 +74,13 @@ namespace WPFSample
         private readonly HostVisual _hostVisual;
         private VisualTargetPresentationSource? _targetSource;
         private VideoElement? VideoElement => Child as VideoElement;
-        private bool _isCleaned = false;
-        private object _lockObj = new object();
         private Dispatcher? _dispatcher;
-        private bool _isCreated = false;
-        private bool _hasVideo = false;
         private double _width = 0;
         private double _height = 0;
+        private object _setVideoStateLock = new();
+        private bool _videoState = false;
+        private IVideoSource? _videoSource = null;
+
 
         #endregion
 
@@ -78,47 +89,10 @@ namespace WPFSample
         public VideoView()
         {
             _hostVisual = new HostVisual();
-            this.Loaded += (sender, e) =>
-            {
-                if (_isCreated)
-                {
-                    return;
-                }
-
-                _isCreated = true;
-
-                Window window = Window.GetWindow(this);
-                if (window is null)
-                {
-                    return;
-                }
-                _dispatcher = DispatcherManager.CreateRenderDispatcher();
-                Stretch stretch = this.Stretch;
-                if (_dispatcher != null)
-                {
-                    bool autoResize = AutoResize;
-                    _ = SetChildAsync(() =>
-                    {
-                        var videoView = new WriteableBitmapElement(autoResize);
-                        if (videoView is VideoElement videoElement)
-                        {
-                            videoElement.Stretch = stretch;
-                        }
-                        videoView.HorizontalAlignment = HorizontalAlignment.Center;
-                        videoView.VerticalAlignment = VerticalAlignment.Center;
-                        videoView.Width = _width;
-                        videoView.Height = _height;
-                        videoView.UpdateViewPort((uint)_width, (uint)_height);
-                        return videoView;
-                    }, _dispatcher);
-                }
-            };
-            this.Unloaded += (sender, e) =>
-            {
-                _ = Clean();
-            };
-            SizeChanged += VideoView_SizeChanged;
             IsHitTestVisible = false;
+            Loaded += VideoView_Loaded;
+            Unloaded += VideoView_Unloaded;
+            SizeChanged += VideoView_SizeChanged;
         }
 
         #endregion
@@ -126,8 +100,8 @@ namespace WPFSample
         #region Child
 
         private bool _isUpdatingChild;
-        private UIElement? _child;
-        public UIElement? Child => _child;
+
+        public UIElement? Child { get; private set; }
 
         private async Task SetChildAsync<T>(Dispatcher? dispatcher = null)
             where T : UIElement, new()
@@ -143,7 +117,7 @@ namespace WPFSample
             {
                 return;
             }
-            var child = await dispatcher.InvokeAsync(@new);
+            T child = await dispatcher.InvokeAsync(@new);
             await SetChildAsync(child);
         }
 
@@ -166,20 +140,21 @@ namespace WPFSample
 
             async Task SetChildAsync()
             {
-                var oldChild = _child;
+                var oldChild = Child;
                 var visualTarget = _targetSource;
-
+                var hostVisual = _hostVisual;
                 if (Equals(oldChild, value))
                     return;
 
                 _targetSource = null;
                 if (visualTarget != null)
                 {
-                    RemoveVisualChild(_hostVisual);
+                    RemoveVisualChild(hostVisual);
+                    await Dispatcher.Yield(DispatcherPriority.Loaded);
                     await visualTarget.Dispatcher.InvokeAsync(visualTarget.Dispose);
                 }
 
-                _child = value;
+                Child = value;
                 if (Child is VideoElement view)
                 {
                     view.OnVideoRendered -= VideoViewContainer_OnVideoRendered;
@@ -215,11 +190,11 @@ namespace WPFSample
             return _hostVisual;
         }
 
-        protected override int VisualChildrenCount => _child != null ? 1 : 0;
+        protected override int VisualChildrenCount => Child != null ? 1 : 0;
 
         protected override Size MeasureOverride(Size availableSize)
         {
-            var child = _child;
+            var child = Child;
             if (child == null)
                 return default(Size);
 
@@ -232,7 +207,7 @@ namespace WPFSample
 
         protected override Size ArrangeOverride(Size finalSize)
         {
-            var child = _child;
+            var child = Child;
             if (child == null)
                 return finalSize;
 
@@ -245,57 +220,63 @@ namespace WPFSample
 
         #endregion
 
-        #region IVideoView
+        #region Function
 
-        public async Task Clean()
+        public void VideoView_Unloaded(object sender, RoutedEventArgs e)
         {
             Trace.WriteLine("Enter");
-            try
-            {
-                Visibility = Visibility.Collapsed;
-                OnVideoRendered = null;
-                await SetChildAsync(null);
-                lock (_lockObj)
-                {
-                    _isCleaned = true;
-                    VideoElement?.Clean();
-                    DispatcherManager.ReleaseRenderDispatcher(_dispatcher);
-                    _dispatcher = null;
-                }
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine(ex);
-            }
+            Visibility = Visibility.Collapsed;
+            OnVideoRendered = null;
+            VideoElement?.Clean();
+            DispatcherManager.ReleaseRenderDispatcher(_dispatcher);
+            _dispatcher = null;
             Trace.WriteLine("Leave");
         }
 
-        #endregion
-
-        #region Function
-
-        public void SetHasVideo(bool hasVideo)
+        public void SetVideoState(bool videoState)
         {
-            Trace.WriteLine($"hasVideo: {hasVideo}");
-            if (!hasVideo)
+            Trace.WriteLine($"hasVideo: {videoState}");
+            lock (_setVideoStateLock)
             {
+                if (_videoState == videoState)
+                {
+                    return;
+                }
+                _videoState = videoState;
                 if (Child is VideoElement view)
                 {
-                    view.OnVideoRendered -= VideoViewContainer_OnVideoRendered;
-                    view.OnVideoRendered += VideoViewContainer_OnVideoRendered;
+                    view.SetState(videoState);
+                    lock (_setVideoStateLock)
+                    {
+                        if (!videoState)
+                        {
+                            view.OnVideoRendered -= VideoViewContainer_OnVideoRendered;
+                            view.OnVideoRendered += VideoViewContainer_OnVideoRendered;
+                        }
+                    }
                 }
+            }                
+        }
+
+        public void SetVideoSource(IVideoSource videoSource)
+        {
+            _videoSource = videoSource;
+            if (VideoElement is not null)
+            {
+                VideoElement.VideoSource = videoSource;
             }
         }
 
         private void VideoViewContainer_OnVideoRendered(object? sender, EventArgs e)
         {
-            try
+            lock (_setVideoStateLock)
             {
-                Dispatcher.InvokeAsync(HandleVideoRendered, DispatcherPriority.Send);
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine(ex.ToString());
+                if (!_videoState)
+                {
+                    Trace.WriteLine($"_videoState is false, return");
+                    return;
+                }
+                HandleVideoRendered();
             }
         }
 
@@ -321,6 +302,35 @@ namespace WPFSample
                     frameworkElement.UpdateViewPort((uint)_width, (uint)_height);
                 }, DispatcherPriority.Send);
             }
+        }
+
+        private void VideoView_Loaded(object sender, RoutedEventArgs e)
+        {
+            Visibility = Visibility.Visible;
+            _dispatcher = DispatcherManager.CreateRenderDispatcher();
+            if (_dispatcher is null)
+            {
+                return;
+            }
+            Stretch stretch = Stretch;
+            bool autoResize = AutoResize;
+            _ = SetChildAsync(() =>
+            {
+                var videoView = new WriteableBitmapElement();
+                if (videoView is VideoElement videoElement)
+                {
+                    videoElement.AutoResize = autoResize;
+                    videoElement.Stretch = stretch;
+                    videoElement.VideoSource = _videoSource;
+                    videoElement.SetState(_videoState);
+                }
+                videoView.HorizontalAlignment = HorizontalAlignment.Center;
+                videoView.VerticalAlignment = VerticalAlignment.Center;
+                videoView.Width = _width;
+                videoView.Height = _height;
+                videoView.UpdateViewPort((uint)_width, (uint)_height);
+                return videoView;
+            }, _dispatcher);
         }
 
         #endregion

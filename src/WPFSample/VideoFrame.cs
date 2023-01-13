@@ -6,12 +6,6 @@ namespace WPFSample
 {
     public class VideoFrame
     {
-        #region Event
-
-        public event EventHandler<VideoFrame>? FrameChanged;
-
-        #endregion Event
-
         #region public Property
 
         public IntPtr YPtr { get; set; }
@@ -36,7 +30,7 @@ namespace WPFSample
 
         #region Public Function
 
-        public void OnFrame(IntPtr yptr, uint yStride, IntPtr uptr, uint uStride, IntPtr vptr, uint vStride, uint width, uint height)
+        public void Update(IntPtr yptr, uint yStride, IntPtr uptr, uint uStride, IntPtr vptr, uint vStride, uint width, uint height)
         {
             YPtr = yptr;
             YStride = yStride;
@@ -51,10 +45,7 @@ namespace WPFSample
             }
             Height = height - height % 2;
             Size = yStride * height + uStride * (height >> 1) + vStride * (height >> 1);
-            FrameChanged?.Invoke(this, this);
         }
-
-        public void Clean() => FrameChanged = null;
 
         #endregion Public Function
     }

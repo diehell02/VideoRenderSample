@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -26,24 +27,50 @@ namespace WPFSample
         private int _frameHeight;
         private int _renderWidth;
         private int _renderHeight;
-        private readonly IVideoSource _videoSource;
+        private IVideoSource? _videoSource;
         private bool _isCleaned = false;
+        private long _setVideoState;
 
         public event EventHandler? OnVideoRendered;
+
+        public IVideoSource? VideoSource
+        {
+            get => _videoSource;
+            set
+            {
+                if (_videoSource == value)
+                {
+                    return;
+                }
+                if (_videoSource is not null)
+                {
+                    _videoSource.VideoFrameEvent -= VideoSource_VideoFrameEvent;
+                }
+                _videoSource = value;
+                if (_videoSource is not null)
+                {
+                    _videoSource.VideoFrameEvent += VideoSource_VideoFrameEvent;
+                }
+            }
+        }
+
+        public bool AutoResize
+        {
+            get => _autoResize;
+            set => _autoResize = value;
+        }
 
         public VideoElement()
         {
             IsHitTestVisible = false;
             RenderOptions.SetBitmapScalingMode(this, BitmapScalingMode.LowQuality);
-            _videoSource = VideoSourceFactory.GetVideoSource();
-            _videoSource.VideoFrameEvent += VideoSource_VideoFrameEvent;
             RenderTimer.Instance.AddListener(OnRendering);
             Unloaded += VideoView_Unloaded;
         }
 
         public void UpdateViewPort(uint width, uint height)
         {
-            _videoSource.UpdateViewPort(width, height);
+            _videoSource?.UpdateViewPort(width, height);
         }
 
         public void Clean()
@@ -53,32 +80,34 @@ namespace WPFSample
                 return;
             }
             _isCleaned = true;
+            SetState(false);
             Trace.WriteLine("Enter");
             _render?.Clean();
             _videoFrameQueue.Clean();
-            _videoSource.Close();
+            if (_videoSource is not null)
+            {
+                _videoSource.VideoFrameEvent -= VideoSource_VideoFrameEvent;
+            }
             RenderTimer.Instance.RemoveListener(OnRendering);
             Trace.WriteLine("Leave");
         }
 
         private void VideoSource_VideoFrameEvent(object? sender, VideoFrameEventArg e)
         {
-            _videoFrame.OnFrame(e.YPtr, e.YStride, e.UPtr, e.UStride, e.VPtr, e.VStride, e.Width, e.Height);
+            if (Interlocked.Read(ref _setVideoState) == 0)
+            {
+                return;
+            }
+            _videoFrame.Update(e.YPtr, e.YStride, e.UPtr, e.UStride, e.VPtr, e.VStride, e.Width, e.Height);
             _videoFrameQueue.Write(_videoFrame);
         }
 
         private void OnRendering()
         {
-            DoRender();
-        }
-
-        protected void VideoView_Unloaded(object? sender, RoutedEventArgs e)
-        {
-            Clean();
-        }
-
-        private void DoRender()
-        {
+            if (Interlocked.Read(ref _setVideoState) == 0)
+            {
+                return;
+            }
             VideoFrame? readedFrame = _videoFrameQueue.Read();
             if (readedFrame is null)
             {
@@ -107,6 +136,11 @@ namespace WPFSample
                 }
             }
             _videoFrameQueue.PutBack(readedFrame);
+        }
+
+        protected void VideoView_Unloaded(object? sender, RoutedEventArgs e)
+        {
+            Clean();
         }
 
         private void UpdateRenderTargetSize(int frameWidth, int frameHeight, int renderWidth, int renderHeight)
@@ -168,5 +202,28 @@ namespace WPFSample
                 _lastTargetHeight--;
             }
         }
+
+        public void SetState(bool state)
+        {
+            Interlocked.Exchange(ref _setVideoState, state ? 1 : 0);
+            if (!state)
+            {
+                Trace.WriteLine("Clear frameQueue");
+                do
+                {
+                    VideoFrame? videoFrame = _videoFrameQueue.Read();
+                    if (videoFrame is null)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        _videoFrameQueue.PutBack(videoFrame);
+                    }
+                } while (true);
+            }
+            _render?.ClearScreen();
+        }
+
     }
 }

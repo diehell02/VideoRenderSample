@@ -28,72 +28,51 @@ namespace WPFSample.Utils.Threading
 
             private void CompositionTarget_Rendering(object? sender, EventArgs e)
             {
-                try
+                RenderingEventArgs args = (RenderingEventArgs)e;
+                if (_lastRenderTime == args.RenderingTime)
                 {
-                    RenderingEventArgs args = (RenderingEventArgs)e;
-                    if (_lastRenderTime == args.RenderingTime)
-                    {
-                        return;
-                    }
-                    _lastRenderTime = args.RenderingTime;
-                    foreach (Action? action in _actions)
-                    {
-                        action?.Invoke();
-                    }
+                    return;
                 }
-                catch (Exception ex)
+                _lastRenderTime = args.RenderingTime;
+                foreach (Action? action in _actions)
                 {
-                    Trace.WriteLine(ex.ToString());
+                    action?.Invoke();
                 }
             }
 
             public void AddListener(Action? action)
             {
-                try
+                if (action is null)
                 {
-                    if (action is null)
-                    {
-                        return;
-                    }
-                    if (_actions.Count == 0)
-                    {
-                        CompositionTarget.Rendering += CompositionTarget_Rendering;
-                    }
-                    _actions.Add(action);
+                    return;
                 }
-                catch (Exception ex)
+                if (_actions.Count == 0)
                 {
-                    Trace.WriteLine(ex.ToString());
+                    CompositionTarget.Rendering += CompositionTarget_Rendering;
                 }
+                _actions.Add(action);
             }
 
             public void RemoveListener(Action? action)
             {
-                try
+                if (action is null)
                 {
-                    if (action is null)
-                    {
-                        return;
-                    }
-                    _actions.Remove(action);
-                    if (_actions.Count == 0)
-                    {
-                        CompositionTarget.Rendering -= CompositionTarget_Rendering;
-                    }
+                    return;
                 }
-                catch (Exception ex)
+                _actions.Remove(action);
+                if (_actions.Count == 0)
                 {
-                    Trace.WriteLine(ex.ToString());
+                    CompositionTarget.Rendering -= CompositionTarget_Rendering;
                 }
             }
         }
 
         private const string RENDER_THREAD_NAME = "Render Thread";
 
-        private static int s_maxDispatcherNumber = Environment.ProcessorCount;
+        private static readonly int s_maxDispatcherNumber = Environment.ProcessorCount;
         private static readonly Dictionary<int, RenderingEventSource> s_threadActionDic = new();
         private static readonly object s_lock = new();
-        private static readonly Dictionary<Dispatcher, int> s_dispatcherDic= new();
+        private static readonly Dictionary<Dispatcher, uint> s_dispatcherDic= new();
 
         static DispatcherManager()
         {
@@ -102,123 +81,87 @@ namespace WPFSample.Utils.Threading
 
         public static Dispatcher? CreateRenderDispatcher()
         {
-            try
+            if (s_dispatcherDic.Count > s_maxDispatcherNumber)
             {
-                if (s_dispatcherDic.Count > s_maxDispatcherNumber)
+                uint minNumber = int.MaxValue;
+                Dispatcher? dispatcher = null;
+                foreach (var keyValuePair in s_dispatcherDic)
                 {
-                    int minNumber = int.MaxValue;
-                    Dispatcher? dispatcher = null;
-                    foreach (var keyValuePair in s_dispatcherDic)
+                    if (minNumber > keyValuePair.Value)
                     {
-                        if (minNumber > keyValuePair.Value)
-                        {
-                            minNumber = keyValuePair.Value;
-                            dispatcher = keyValuePair.Key;
-                        }
-                    }
-                    if (dispatcher is null)
-                    {
-                        return null;
-                    }
-                    if (s_dispatcherDic.TryGetValue(dispatcher, out int number))
-                    {
-                        number++;
-                        s_dispatcherDic[dispatcher] = number;
-                    }
-                    return dispatcher;
-                }
-                else
-                {
-                    var render = UIDispatcher.RunNew(RENDER_THREAD_NAME + $"#{s_dispatcherDic.Count}");
-                    if (render != null)
-                    {
-                        s_dispatcherDic.Add(render, 1);
-                        return render;
+                        minNumber = keyValuePair.Value;
+                        dispatcher = keyValuePair.Key;
                     }
                 }
+                if (dispatcher is null)
+                {
+                    return null;
+                }
+                if (s_dispatcherDic.TryGetValue(dispatcher, out uint number))
+                {
+                    number++;
+                    s_dispatcherDic[dispatcher] = number;
+                }
+                return dispatcher;
             }
-            catch (Exception ex)
+            else
             {
-                Trace.WriteLine(ex.ToString());
+                Dispatcher? render = UIDispatcher.RunNew(RENDER_THREAD_NAME + $"#{s_dispatcherDic.Count}");
+                if (render != null)
+                {
+                    s_dispatcherDic.Add(render, 1);
+                    return render;
+                }
             }
             return null;
         }
 
         public static void ReleaseRenderDispatcher(Dispatcher? dispatcher)
         {
-            try
+            if (dispatcher is null)
             {
-                if (dispatcher is null)
-                {
-                    return;
-                }
-                dispatcher.InvokeShutdown();
-                if (s_dispatcherDic.TryGetValue(dispatcher, out int number))
-                {
-                    if (number > 1)
-                    {
-                        number--;
-                        s_dispatcherDic[dispatcher] = number;
-                    }
-                    else
-                    {
-                        s_dispatcherDic.Remove(dispatcher);
-                    }
-                }
+                return;
             }
-            catch (Exception ex)
+            if (s_dispatcherDic.TryGetValue(dispatcher, out uint number))
             {
-                Trace.WriteLine(ex.ToString());
+                number--;
+                s_dispatcherDic[dispatcher] = number;
             }
         }
 
         public static void AddRenderingListener(Action action)
         {
-            try
+            lock (s_lock)
             {
-                lock (s_lock)
+                int threadId = Environment.CurrentManagedThreadId;
+                if (s_threadActionDic.TryGetValue(threadId, out RenderingEventSource? renderingEventSource))
                 {
-                    int threadId = Environment.CurrentManagedThreadId;
-                    if (s_threadActionDic.TryGetValue(threadId, out RenderingEventSource? renderingEventSource))
-                    {
-                        renderingEventSource?.AddListener(action);
-                        return;
-                    }
-                    renderingEventSource = new RenderingEventSource(threadId);
-                    s_threadActionDic.Add(threadId, renderingEventSource);
-                    renderingEventSource.AddListener(action);
+                    renderingEventSource?.AddListener(action);
+                    return;
                 }
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine(ex.ToString());
+                renderingEventSource = new RenderingEventSource(threadId);
+                s_threadActionDic.Add(threadId, renderingEventSource);
+                renderingEventSource.AddListener(action);
             }
         }
 
         public static void RemoveRenderingListener(Action action)
         {
-            try
+            lock (s_lock)
             {
-                lock (s_lock)
+                int threadId = Environment.CurrentManagedThreadId;
+                if (s_threadActionDic.TryGetValue(threadId, out RenderingEventSource? renderingEventSource))
                 {
-                    int threadId = Environment.CurrentManagedThreadId;
-                    if (s_threadActionDic.TryGetValue(threadId, out RenderingEventSource? renderingEventSource))
+                    if (renderingEventSource != null)
                     {
-                        if (renderingEventSource != null)
+                        renderingEventSource.RemoveListener(action);
+                        if (renderingEventSource.ListenerCount == 0)
                         {
-                            renderingEventSource.RemoveListener(action);
-                            if (renderingEventSource.ListenerCount == 0)
-                            {
-                                s_threadActionDic.Remove(threadId);
-                            }
-                            return;
+                            s_threadActionDic.Remove(threadId);
                         }
+                        return;
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine(ex.ToString());
             }
         }
     }

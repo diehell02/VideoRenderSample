@@ -43,6 +43,7 @@ namespace Render.Source
 
         public void Close()
         {
+            VideoFrameEvent = null;
             _cancellationTokenSource.Cancel();
             _cancellationTokenSource.Dispose();
         }

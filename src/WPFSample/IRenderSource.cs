@@ -19,6 +19,8 @@ namespace WPFSample
 
         void Clean();
 
+        void ClearScreen();
+
         ImageSource? ImageSource { get; }
 
         bool IsInitialize { get; }
