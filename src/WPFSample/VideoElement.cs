@@ -209,18 +209,7 @@ namespace WPFSample
             if (!state)
             {
                 Trace.WriteLine("Clear frameQueue");
-                do
-                {
-                    VideoFrame? videoFrame = _videoFrameQueue.Read();
-                    if (videoFrame is null)
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        _videoFrameQueue.PutBack(videoFrame);
-                    }
-                } while (true);
+                _videoFrameQueue.ClearCache();
             }
             _render?.ClearScreen();
         }

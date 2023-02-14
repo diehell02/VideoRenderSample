@@ -15,6 +15,16 @@ namespace WPFSample
 {
     public class VideoView : FrameworkElement
     {
+        #region Internal
+
+        private enum LifetimeStage
+        {
+            Unloaded,
+            Loaded,
+        }
+
+        #endregion
+
         #region DependencyProperty
 
         public static readonly DependencyProperty AutoResizeProperty =
@@ -80,6 +90,7 @@ namespace WPFSample
         private object _setVideoStateLock = new();
         private bool _videoState = false;
         private IVideoSource? _videoSource = null;
+        private LifetimeStage _lifetimeStage = LifetimeStage.Unloaded;
 
 
         #endregion
@@ -225,6 +236,12 @@ namespace WPFSample
         public void VideoView_Unloaded(object sender, RoutedEventArgs e)
         {
             Trace.WriteLine("Enter");
+            if (_lifetimeStage == LifetimeStage.Unloaded)
+            {
+                Trace.WriteLine("Leave");
+                return;
+            }
+            _lifetimeStage = LifetimeStage.Unloaded;
             Visibility = Visibility.Collapsed;
             OnVideoRendered = null;
             VideoElement?.Clean();
@@ -306,6 +323,11 @@ namespace WPFSample
 
         private void VideoView_Loaded(object sender, RoutedEventArgs e)
         {
+            if (_lifetimeStage == LifetimeStage.Loaded)
+            {
+                return;
+            }
+            _lifetimeStage = LifetimeStage.Loaded;
             Visibility = Visibility.Visible;
             _dispatcher = DispatcherManager.CreateRenderDispatcher();
             if (_dispatcher is null)

@@ -1,14 +1,18 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace WPFSample
+namespace UnoSample.Utils
 {
     internal abstract class BufferQueue<T> where T : class
     {
-        private readonly object _cacheLock = new object();
+        private readonly object _cacheLock = new();
         private const int LENGTH = 3;
-        protected readonly Queue<T> _cache = new Queue<T>();
-        protected readonly Stack<T> _idel = new Stack<T>();
-        protected readonly List<T> _bufferList = new List<T>();
+        protected readonly Queue<T> _cache = new();
+        protected readonly Stack<T> _idel = new();
+        protected readonly List<T> _bufferList = new();
 
         public BufferQueue()
         {
@@ -58,25 +62,6 @@ namespace WPFSample
                 _cache.Clear();
                 _idel.Clear();
                 _bufferList.Clear();
-            }
-        }
-
-        public void ClearCache()
-        {
-            lock (_cacheLock)
-            {
-                do
-                {
-                    _cache.TryDequeue(out T? buffer);
-                    if (buffer is null)
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        _idel.Push(buffer);
-                    }
-                } while (true);
             }
         }
 

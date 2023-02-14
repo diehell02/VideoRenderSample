@@ -1,51 +1,38 @@
-﻿using Render.Source;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Windows.Threading;
+using System.Runtime.InteropServices.WindowsRuntime;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Data;
+using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Navigation;
+using Render.Source;
+using Windows.Foundation;
+using Windows.Foundation.Collections;
 
-namespace WPFSample
+// The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
+
+namespace UnoSample
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public partial class MainWindow : Window
+    public sealed partial class MainPage : Page
     {
-        public MainWindow()
+        public MainPage()
         {
-            InitializeComponent();
+            this.InitializeComponent();
             VideoGrid.Loaded += VideoGrid_Loaded;
-            VideoView videoView = new();
-            videoView.SetVideoSource(VideoSourceFactory.GetVideoSource());
-            videoView.SetVideoState(true);
-            DispatcherTimer dispatcherTimer = new DispatcherTimer(TimeSpan.FromSeconds(5), DispatcherPriority.Send, async (s, e) =>
-            {
-                //ClearVideos();
-                //DisplayVideos();
-                VideoGrid.Children.Clear();
-                await Dispatcher.Yield(DispatcherPriority.Loaded);
-                VideoGrid.Children.Add(videoView);
-            }, Dispatcher);
         }
 
         private void VideoGrid_Loaded(object sender, RoutedEventArgs e)
-        {
-            this.Activate();
-            //DisplayVideos();
-        }
-
-        private void DisplayVideos()
         {
             int count = Config.Instance.VideoViewNumber;
             int itemCount = 1;
@@ -74,8 +61,6 @@ namespace WPFSample
                             VideoView videoView = new();
                             videoView.SetValue(Grid.RowProperty, i);
                             videoView.SetValue(Grid.ColumnProperty, j);
-                            videoView.SetVideoSource(VideoSourceFactory.GetVideoSource());
-                            videoView.SetVideoState(true);
                             VideoGrid.Children.Add(videoView);
                             count--;
                         }
@@ -84,13 +69,6 @@ namespace WPFSample
                 }
                 itemCount++;
             }
-        }
-
-        private void ClearVideos()
-        {
-            VideoGrid.Children.Clear();
-            VideoGrid.ColumnDefinitions.Clear();
-            VideoGrid.RowDefinitions.Clear();
         }
     }
 }

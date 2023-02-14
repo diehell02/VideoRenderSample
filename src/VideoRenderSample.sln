@@ -21,8 +21,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WPFSample", "WPFSample\WPFS
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Render.InteropCs", "Render.Interop\swig\Render.InteropCs.csproj", "{B046077B-1731-44BC-8B38-81FD23A70D1D}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "MAUI", "MAUI", "{F592D28F-32B5-4BC4-9EBE-9AF8EE85879F}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
