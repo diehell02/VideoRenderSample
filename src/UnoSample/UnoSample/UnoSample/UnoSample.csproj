@@ -46,7 +46,6 @@
     <UpToDateCheckInput Remove="VideoView.xaml" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Render.Interop\swig\Render.InteropCs.csproj" />
     <ProjectReference Include="..\..\..\Render.Source\Render.Source.csproj" />
   </ItemGroup>
 </Project>

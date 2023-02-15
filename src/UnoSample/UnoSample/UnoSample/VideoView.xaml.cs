@@ -26,8 +26,8 @@ namespace UnoSample
         private readonly IVideoSource _videoSource;
         private readonly VideoFrame _videoFrame = new();
         private readonly VideoFrameQueue _videoFrameQueue = new();
-        private readonly FrameConverter _frameConverter = new();
         private byte[]? _frameBuffer;
+        private byte[]? _buffer;
 
         public VideoView()
         {
@@ -52,8 +52,7 @@ namespace UnoSample
             {
                 return;
             }
-            IntPtr buffer = _frameConverter.I420ToARGB(videoFrame.YPtr, videoFrame.Width, videoFrame.Height);
-            DoRender(buffer, (int)videoFrame.Width, (int)videoFrame.Height);
+            DoRender(videoFrame.YPtr, (int)videoFrame.Width, (int)videoFrame.Height);
             _videoFrameQueue.PutBack(videoFrame);
         }
 
@@ -81,8 +80,13 @@ namespace UnoSample
                 _writeableBitmap = new WriteableBitmap(width, height);
                 VideoImage.Source = _writeableBitmap;
                 _frameBuffer = new byte[_width * height * 4];
+                _buffer = new byte[width * height * 3 / 2];
             }
             if (_frameBuffer is null)
+            {
+                return;
+            }
+            if (_buffer is null)
             {
                 return;
             }
@@ -90,7 +94,9 @@ namespace UnoSample
             {
                 return;
             }
-            Marshal.Copy(buffer, _frameBuffer, 0, _frameBuffer.Length);
+            //IntPtr buffer = _frameConverter.I420ToARGB(videoFrame.YPtr, videoFrame.Width, videoFrame.Height);
+            Marshal.Copy(buffer, _buffer, 0, _buffer.Length);
+            VideoFrameConverter.YUV2RGBA(_buffer, _frameBuffer, (uint)_width, (uint)_height);
             using Stream stream = _writeableBitmap.PixelBuffer.AsStream();
             stream.WriteAsync(_frameBuffer, 0, _frameBuffer.Length);
             _writeableBitmap.Invalidate();
