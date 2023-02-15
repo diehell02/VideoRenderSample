@@ -38,6 +38,7 @@ namespace WinUISample
         private readonly VideoFrameQueue _videoFrameQueue = new();
         //private readonly FrameConverter _frameConverter = new();
         private byte[]? _frameBuffer;
+        private byte[]? _buffer;
 
         public VideoView2()
         {
@@ -90,8 +91,13 @@ namespace WinUISample
                 _writeableBitmap = new WriteableBitmap(width, height);
                 VideoImage.Source = _writeableBitmap;
                 _frameBuffer = new byte[_width * height * 4];
+                _buffer = new byte[width * height * 3 / 2];
             }
             if (_frameBuffer is null)
+            {
+                return;
+            }
+            if (_buffer is null)
             {
                 return;
             }
@@ -100,8 +106,8 @@ namespace WinUISample
                 return;
             }
             //IntPtr buffer = _frameConverter.I420ToARGB(videoFrame.YPtr, videoFrame.Width, videoFrame.Height);
-            //Marshal.Copy(buffer, _frameBuffer, 0, _frameBuffer.Length);
-            VideoFrameConverter.YUV2RGBA(buffer, ref _frameBuffer, (uint)_width, (uint)_height);
+            Marshal.Copy(buffer, _buffer, 0, _buffer.Length);
+            VideoFrameConverter.YUV2RGBA(_buffer, _frameBuffer, (uint)_width, (uint)_height);
             using Stream stream = _writeableBitmap.PixelBuffer.AsStream();
             stream.WriteAsync(_frameBuffer, 0, _frameBuffer.Length);
             _writeableBitmap.Invalidate();
