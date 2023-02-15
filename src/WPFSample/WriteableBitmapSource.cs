@@ -8,6 +8,7 @@ using System.Windows;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using WPFSample.Utils.Threading;
+using Render.Source;
 
 namespace WPFSample
 {
@@ -32,6 +33,10 @@ namespace WPFSample
         private IntPtr _tempVPtr;
         private uint _tempVStride;
         private uint _tempVLength;
+        private byte[] _source;
+        private byte[] _dest;
+
+        private const bool USE_LIBYUV = false;
 
         public ImageSource? ImageSource => _imageSource;
 
@@ -101,6 +106,8 @@ namespace WPFSample
             _imageSource = new WriteableBitmap(_width, _height, 96, 96, PixelFormats.Bgr32, null);
             _rect = new Int32Rect(0, 0, _width, _height);
             _bufferSize = _width * _height << 2;
+            _source = new byte[_width * _height * 3 / 2];
+            _dest = new byte[_bufferSize];
             IsInitialize = true;
             return true;
         }
@@ -135,17 +142,26 @@ namespace WPFSample
                 _isFilled = true;
 
                 _imageSource.Lock();
-                if (_width < videoWidth || _height < videoHeight)
+                if (USE_LIBYUV)
                 {
-                    // Convert I420 to ARGB with resize
-                    _frameConverter.I420ToARGB(yPtr, yStride, uPtr, uStride, vPtr, vStride, videoWidth, videoHeight, _imageSource.BackBuffer,
-                        _width, _height,
-                        _tempYPtr, _tempYStride, _tempUPtr, _tempUStride, _tempVPtr, _tempVStride);
+                    if (_width < videoWidth || _height < videoHeight)
+                    {
+                        // Convert I420 to ARGB with resize
+                        _frameConverter.I420ToARGB(yPtr, yStride, uPtr, uStride, vPtr, vStride, videoWidth, videoHeight, _imageSource.BackBuffer,
+                            _width, _height,
+                            _tempYPtr, _tempYStride, _tempUPtr, _tempUStride, _tempVPtr, _tempVStride);
+                    }
+                    else
+                    {
+                        // Convert I420 to ARGB without resize
+                        _frameConverter.I420ToARGB(yPtr, yStride, uPtr, uStride, vPtr, vStride, _width, _height, _imageSource.BackBuffer);
+                    }
                 }
                 else
                 {
-                    // Convert I420 to ARGB without resize
-                    _frameConverter.I420ToARGB(yPtr, yStride, uPtr, uStride, vPtr, vStride, _width, _height, _imageSource.BackBuffer);
+                    Marshal.Copy(yPtr, _source, 0, _source.Length);
+                    VideoFrameConverter.YUV2RGBA(_source, _dest, _width, _height);
+                    _imageSource.WritePixels(new Int32Rect(0, 0, _width, _height), _dest, _width << 2, 0);
                 }
                 _imageSource.AddDirtyRect(new Int32Rect(0, 0, _width, _height));
                 _imageSource.Unlock();
@@ -171,8 +187,17 @@ namespace WPFSample
                 _isFilled = true;
 
                 _imageSource.Lock();
-                // Convert I420 to ARGB without resize
-                _frameConverter.I420ToARGB(yPtr, yStride, uPtr, uStride, vPtr, vStride, _width, _height, _imageSource.BackBuffer);
+                if (USE_LIBYUV)
+                {
+                    // Convert I420 to ARGB without resize
+                    _frameConverter.I420ToARGB(yPtr, yStride, uPtr, uStride, vPtr, vStride, _width, _height, _imageSource.BackBuffer);
+                }
+                else
+                {
+                    Marshal.Copy(yPtr, _source, 0, _source.Length);
+                    VideoFrameConverter.YUV2RGBA(_source, _dest, _width, _height);
+                    _imageSource.WritePixels(new Int32Rect(0, 0, _width, _height), _dest, _width << 2, 0);
+                }
                 _imageSource.AddDirtyRect(new Int32Rect(0, 0, _width, _height));
                 _imageSource.Unlock();
             }

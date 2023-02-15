@@ -29,20 +29,20 @@ namespace WPFSample
             VideoView videoView = new();
             videoView.SetVideoSource(VideoSourceFactory.GetVideoSource());
             videoView.SetVideoState(true);
-            DispatcherTimer dispatcherTimer = new DispatcherTimer(TimeSpan.FromSeconds(5), DispatcherPriority.Send, async (s, e) =>
-            {
-                //ClearVideos();
-                //DisplayVideos();
-                VideoGrid.Children.Clear();
-                await Dispatcher.Yield(DispatcherPriority.Loaded);
-                VideoGrid.Children.Add(videoView);
-            }, Dispatcher);
+            //DispatcherTimer dispatcherTimer = new DispatcherTimer(TimeSpan.FromSeconds(5), DispatcherPriority.Send, async (s, e) =>
+            //{
+            //    //ClearVideos();
+            //    //DisplayVideos();
+            //    VideoGrid.Children.Clear();
+            //    await Dispatcher.Yield(DispatcherPriority.Loaded);
+            //    VideoGrid.Children.Add(videoView);
+            //}, Dispatcher);
         }
 
         private void VideoGrid_Loaded(object sender, RoutedEventArgs e)
         {
             this.Activate();
-            //DisplayVideos();
+            DisplayVideos();
         }
 
         private void DisplayVideos()
