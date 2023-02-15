@@ -14,9 +14,13 @@ namespace Render.Source
 
         static Config()
         {
-            Instance = new Config();
             var content = File.ReadAllText(FILE_NAME);
-            Instance = JsonSerializer.Deserialize<Config>(content);
+            var config = JsonSerializer.Deserialize<Config>(content);
+            if (config is null)
+            {
+                throw new Exception("Config.json Deserialize error!");
+            }
+            Instance = config;
             if (Instance.LocalYuvFile?.YuvPath == null)
             {
                 Instance.LocalYuvFile = null;

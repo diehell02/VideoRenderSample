@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 
@@ -87,7 +88,7 @@ namespace Render.Source
                     return file;
                 }
             }
-            return files[^1];
+            return files.Last();
         }
 
         private void DoFrame(object? obj)
