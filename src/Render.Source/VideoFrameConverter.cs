@@ -180,7 +180,7 @@ namespace Render.Source
                     dest[index++] = (byte)(B < 0 ? 0 : B > FF ? FF : B);
                     dest[index++] = (byte)(G < 0 ? 0 : G > FF ? FF : G);
                     dest[index++] = (byte)(R < 0 ? 0 : R > FF ? FF : R);
-                    index++;
+                    dest[index++] = FF;
                 }
             }
         }
