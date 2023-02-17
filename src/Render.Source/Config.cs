@@ -14,14 +14,23 @@ namespace Render.Source
 
         static Config()
         {
-            string content = File.ReadAllText($"{AppDomain.CurrentDomain.BaseDirectory}/{FILE_NAME}");
-            Config? config = JsonSerializer.Deserialize<Config>(content);
-            if (config is null)
+            try
             {
-                Instance = new Config();
-                return;
+                string content = File.ReadAllText($"{AppDomain.CurrentDomain.BaseDirectory}/{FILE_NAME}");
+                Config? config = JsonSerializer.Deserialize<Config>(content);
+                if (config is null)
+                {
+                    Instance = CreateDefault();
+                }
+                else
+                {
+                    Instance = config;
+                }
             }
-            Instance = config;
+            catch
+            {
+                Instance = CreateDefault();
+            }
             if (Instance.LocalYuvFile?.YuvPath == null)
             {
                 Instance.LocalYuvFile = null;
@@ -54,6 +63,28 @@ namespace Render.Source
             }
         }
 
+        public static Config CreateDefault()
+        {
+            return new Config()
+            {
+                YuvFiles = new List<YuvFile>()
+                {
+                    new YuvFile()
+                    {
+                        YuvPath = "240x134.yuv",
+                        FrameWidth = 240,
+                        FrameHeight = 134,
+                        FrameLength = 100,
+                    }
+                },
+                FramePerSecond = 30,
+                IsMultipleThread = true,
+                IsMultipleScreen = false,
+                AutoChangeLocaltion = false,
+                VideoViewNumber = 1,
+            };
+        }
+
         public List<YuvFile>? YuvFiles { get; set; }
         public YuvFile? LocalYuvFile { get; set; }
         public int FramePerSecond { get; set; }
@@ -70,10 +101,6 @@ namespace Render.Source
         {
             var json = JsonSerializer.Serialize(this);
             File.WriteAllText(FILE_NAME, json);
-        }
-
-        public Config()
-        {
         }
     }
 }
