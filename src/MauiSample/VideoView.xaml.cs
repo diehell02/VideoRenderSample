@@ -13,7 +13,7 @@ public partial class VideoView : ContentView
 	private uint _width;
 	private uint _height;
 	private byte[]? _buffer;
-	private VideoDrawable? _videoDrawable;
+	private SkiaVideoDrawable? _videoDrawable;
 
 	public VideoView()
 	{
@@ -24,13 +24,21 @@ public partial class VideoView : ContentView
 		InitializeComponent();
 		graphicsView.Loaded += GraphicsView_Loaded;
 		graphicsView.Unloaded += GraphicsView_Unloaded;
-		if (Resources.TryGetValue("drawable", out object drawable))
-		{
-			_videoDrawable = drawable as VideoDrawable;
-		}
-	}
+        //if (Resources.TryGetValue("drawable", out object drawable))
+        //{
+        //	_videoDrawable = drawable as SkiaVideoDrawable;
+        //}
+        _videoDrawable = new SkiaVideoDrawable();
+        _videoDrawable.ImageCreated += _videoDrawable_ImageCreated;
 
-	private void VideoView_Unloaded(object? sender, EventArgs e)
+    }
+
+    private void _videoDrawable_ImageCreated(object? sender, EventArgs e)
+    {
+        graphicsView.Drawable = _videoDrawable.Image;
+    }
+
+    private void VideoView_Unloaded(object? sender, EventArgs e)
 	{
 		_videoSource.Close();
 		_dispatcherTimer?.Stop();

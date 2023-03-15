@@ -51,6 +51,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <PackageReference Include="CommunityToolkit.Maui" Version="2.0.0" />
 	  <PackageReference Include="Microsoft.Maui.Graphics" Version="6.0.501" />
 	  <PackageReference Include="Microsoft.Maui.Graphics.Skia" Version="6.0.501" />
 	</ItemGroup>

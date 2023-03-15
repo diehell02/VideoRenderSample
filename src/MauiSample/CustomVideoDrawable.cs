@@ -3,84 +3,19 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
-using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Maui.Graphics.Skia;
-using Render.Source;
 using SkiaSharp;
 
 namespace MauiSample
 {
-    internal class VideoDrawable : IDrawable, IDisposable
+    internal class CustomVideoDrawable : IDrawable, IDisposable, IVideoDrawable
     {
-        private SKBitmap? _sKBitmap;
-        private SkiaImage? _skiaImage;
-        private Microsoft.Maui.Graphics.IImage? _image;
-        private uint _width;
-        private uint _height;
-        private byte[]? _buffer;
+        public void Draw(ICanvas canvas, RectF dirtyRect) => throw new NotImplementedException();
 
-        public void Draw(ICanvas canvas, RectF dirtyRect)
-        {
-            if (_image is null)
-            {
-                return;
-            }
-            canvas.DrawImage(_image, dirtyRect.X, dirtyRect.Y, dirtyRect.Width, dirtyRect.Height);
-        }
-
-        private void EnsureBitmap(uint width, uint height)
-        {
-            bool needResize = false;
-            if (_width != width)
-            {
-                needResize = true;
-                _width = width;
-            }
-            if (_height != height)
-            {
-                needResize = true;
-                _height = height;
-            }
-            if (_sKBitmap is null)
-            {
-                _sKBitmap = new SKBitmap((int)width, (int)height, SKColorType.Rgb888x, SKAlphaType.Premul);
-            }
-            else if (needResize)
-            {
-                _sKBitmap.Resize(new SKImageInfo((int)width, (int)height), SKFilterQuality.None);
-            }
-            if (_skiaImage is null)
-            {
-                _skiaImage = new SkiaImage(_sKBitmap);
-                _image = _skiaImage;
-            }
-            else if (needResize)
-            {
-                _skiaImage.Resize(width, height);
-            }
-            if (needResize)
-            {
-                _buffer = new byte[width * height << 2];
-            }
-        }
-
-        public void DrawVideoFrame(byte[] yuvFrame, uint width, uint height)
-        {
-            EnsureBitmap(width, height);
-            byte[] pixels = new byte[width * height * 4];
-            VideoFrameConverter.YUV2RGBA(yuvFrame, pixels, width, height);
-            unsafe
-            {
-                fixed (byte* p = pixels)
-                {
-                    _sKBitmap.SetPixels((nint)p);
-                }
-            }
-        }
+        public void DrawVideoFrame(byte[] yuvFrame, uint width, uint height) => throw new NotImplementedException();
 
         #region IDisposable
 
@@ -91,7 +26,7 @@ namespace MauiSample
         // does not get called.
         // It gives your base class the opportunity to finalize.
         // Do not provide finalizer in types derived from this class.
-        ~VideoDrawable()
+        ~CustomVideoDrawable()
         {
             // Do not re-create Dispose clean-up code here.
             // Calling Dispose(disposing: false) is optimal in terms of
@@ -130,13 +65,17 @@ namespace MauiSample
                 if (disposing)
                 {
                     // Dispose managed resources.
-                    _skiaImage.Dispose();
-                    _sKBitmap.Dispose();
+                    DisposeManagedResources();
                 }
 
                 // Note disposing has been done.
                 _disposed = true;
             }
+        }
+
+        private void DisposeManagedResources()
+        {
+            throw new NotImplementedException();
         }
 
         #endregion

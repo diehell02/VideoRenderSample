@@ -24,7 +24,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Render.InteropCs", "Render.
 		{B4D924B6-04C2-45EB-B26C-EF9854EC3866} = {B4D924B6-04C2-45EB-B26C-EF9854EC3866}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MauiSample", "MauiSample\MauiSample.csproj", "{3EA92A97-37C5-45C9-AF7F-B8A72711D817}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MauiSample", "MauiSample\MauiSample.csproj", "{3EA92A97-37C5-45C9-AF7F-B8A72711D817}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -58,8 +58,8 @@ Global
 		{C870AD79-4B92-4AF5-97BB-02C42C93F22B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C870AD79-4B92-4AF5-97BB-02C42C93F22B}.Release|x64.ActiveCfg = Release|x64
 		{C870AD79-4B92-4AF5-97BB-02C42C93F22B}.Release|x64.Build.0 = Release|x64
-		{76FD620D-E88F-42D7-A624-E37C16AFC8FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{76FD620D-E88F-42D7-A624-E37C16AFC8FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{76FD620D-E88F-42D7-A624-E37C16AFC8FC}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{76FD620D-E88F-42D7-A624-E37C16AFC8FC}.Debug|Any CPU.Build.0 = Debug|x64
 		{76FD620D-E88F-42D7-A624-E37C16AFC8FC}.Debug|x64.ActiveCfg = Debug|x64
 		{76FD620D-E88F-42D7-A624-E37C16AFC8FC}.Debug|x64.Build.0 = Debug|x64
 		{76FD620D-E88F-42D7-A624-E37C16AFC8FC}.Debug|x64.Deploy.0 = Debug|x64
