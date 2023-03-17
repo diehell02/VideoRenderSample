@@ -117,9 +117,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="D3D11Image.h" />
+    <ClInclude Include="D3D11InteropImage.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D11Image.cpp" />
+    <ClCompile Include="D3D11InteropImage.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

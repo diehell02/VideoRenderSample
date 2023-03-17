@@ -338,7 +338,13 @@ namespace WPFSample
             bool autoResize = AutoResize;
             _ = SetChildAsync(() =>
             {
+#if D3DImage
                 var videoView = new D3D11ImageElement();
+#elif D3D11Image
+                var videoView = new D3D11InteropImageElement();
+#else
+                var videoView = new WriteableBitmapElement();
+#endif
                 if (videoView is VideoElement videoElement)
                 {
                     videoElement.AutoResize = autoResize;
@@ -355,6 +361,6 @@ namespace WPFSample
             }, _dispatcher);
         }
 
-        #endregion
+#endregion
     }
 }

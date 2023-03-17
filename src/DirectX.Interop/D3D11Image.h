@@ -34,17 +34,23 @@ if (hr != S_OK) return false;
             Direct3DSurface11 = 1,
         };
 
+        public enum class D3DFormat {
+            D3DFMT_A8R8G8B8 = 21,
+            D3DFMT_YV12 = 842094169,
+        };
+
         public ref class D3D11Image : D3DImage
         {
         public:
-            D3D11Image::D3D11Image(IntPtr hwnd, Direct3DSurfaceType direct3DSurfaceType);
-            D3D11Image(Direct3DSurfaceType direct3DSurfaceType);
+            D3D11Image::D3D11Image(IntPtr hwnd,
+                Direct3DSurfaceType direct3DSurfaceType, D3DFormat format);
+            D3D11Image(Direct3DSurfaceType direct3DSurfaceType, D3DFormat format);
             ~D3D11Image();
             !D3D11Image();
 
             bool SetupSurface(int videoWidth, int videoHeight);
-
-            void WritePixels(IntPtr buffer, UInt32 videoWidth, UInt32 videoHeight);
+            void WritePixels(IntPtr buffer);
+            void WritePixels(IntPtr yBuffer, UInt32 yStride, IntPtr uBuffer, UInt32 uStride, IntPtr vBuffer, UInt32 vStride);
 
         private:
             IntPtr m_backbuffer;
@@ -72,6 +78,8 @@ if (hr != S_OK) return false;
             bool m_initializeD3DSuccess = false;
             bool m_createResourceSuccess = false;
             int m_stride;
+            bool m_createdHiddenWindow = false;
+            D3DFORMAT m_format;
 
             bool InitD3D();
             void OnIsFrontBufferAvailableChanged(System::Object^ sender, System::Windows::DependencyPropertyChangedEventArgs e);
@@ -79,6 +87,7 @@ if (hr != S_OK) return false;
             void ReleaseResource();
             bool CreateResource(int width, int height);
             bool FillD3D9Surface(IntPtr buffer, int width, int height);
+            bool FillD3D9Surface(IntPtr yBuffer, UInt32 yStride, IntPtr uBuffer, UInt32 uStride, IntPtr vBuffer, UInt32 vStride);
             bool FillD3D11Surface(IntPtr buffer, int width, int height);
             void StretchSurface();
             void CreateScene();

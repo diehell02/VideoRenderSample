@@ -36,8 +36,6 @@ namespace WPFSample
         private byte[]? _source;
         private byte[]? _dest;
 
-        private const bool USE_LIBYUV = true;
-
         public ImageSource? ImageSource => _imageSource;
 
         public bool IsInitialize
@@ -142,7 +140,7 @@ namespace WPFSample
                 _isFilled = true;
 
                 _imageSource.Lock();
-                if (USE_LIBYUV)
+#if USE_LIBYUV
                 {
                     if (_width < videoWidth || _height < videoHeight)
                     {
@@ -157,12 +155,13 @@ namespace WPFSample
                         _frameConverter.I420ToARGB(yPtr, yStride, uPtr, uStride, vPtr, vStride, _width, _height, _imageSource.BackBuffer);
                     }
                 }
-                else
+#else
                 {
                     Marshal.Copy(yPtr, _source, 0, _source.Length);
                     VideoFrameConverter.YUV2RGBA(_source, _dest, _width, _height);
                     _imageSource.WritePixels(new Int32Rect(0, 0, _width, _height), _dest, _width << 2, 0);
                 }
+#endif
                 _imageSource.AddDirtyRect(new Int32Rect(0, 0, _width, _height));
                 _imageSource.Unlock();
             }
@@ -187,17 +186,18 @@ namespace WPFSample
                 _isFilled = true;
 
                 _imageSource.Lock();
-                if (USE_LIBYUV)
+#if USE_LIBYUV
                 {
                     // Convert I420 to ARGB without resize
                     _frameConverter.I420ToARGB(yPtr, yStride, uPtr, uStride, vPtr, vStride, _width, _height, _imageSource.BackBuffer);
                 }
-                else
+#else
                 {
                     Marshal.Copy(yPtr, _source, 0, _source.Length);
                     VideoFrameConverter.YUV2RGBA(_source, _dest, _width, _height);
                     _imageSource.WritePixels(new Int32Rect(0, 0, _width, _height), _dest, _width << 2, 0);
                 }
+#endif
                 _imageSource.AddDirtyRect(new Int32Rect(0, 0, _width, _height));
                 _imageSource.Unlock();
             }

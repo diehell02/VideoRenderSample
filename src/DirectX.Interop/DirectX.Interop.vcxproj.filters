@@ -18,9 +18,15 @@
     <ClInclude Include="D3D11Image.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="D3D11InteropImage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D11Image.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D11InteropImage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -3,19 +3,43 @@
 
 namespace Render {
     namespace Interop {
-        D3D11Image::D3D11Image(IntPtr hwnd, Direct3DSurfaceType direct3DSurfaceType)
+        D3D11Image::D3D11Image(IntPtr hwnd, Direct3DSurfaceType direct3DSurfaceType,
+            D3DFormat format)
         {
             m_direct3DSurfaceType = direct3DSurfaceType;
+            switch (format)
+            {
+            case D3DFormat::D3DFMT_A8R8G8B8:
+                m_format = D3DFORMAT::D3DFMT_A8R8G8B8;
+                break;
+            case D3DFormat::D3DFMT_YV12:
+                m_format = (D3DFORMAT)MAKEFOURCC('Y', 'V', '1', '2');
+                break;
+            default:
+                break;
+            }
             m_hwnd = static_cast<HWND>(hwnd.ToPointer());
             this->IsFrontBufferAvailableChanged += gcnew System::Windows::DependencyPropertyChangedEventHandler(this, &D3D11Image::OnIsFrontBufferAvailableChanged);
 
             AllocResizeBuffer(1920, 1080);
-            InitD3D();
+            m_initializeD3DSuccess = InitD3D();
         }
 
-        D3D11Image::D3D11Image(Direct3DSurfaceType direct3DSurfaceType)
+        D3D11Image::D3D11Image(Direct3DSurfaceType direct3DSurfaceType,
+            D3DFormat format)
         {
             m_direct3DSurfaceType = direct3DSurfaceType;
+            switch (format)
+            {
+            case D3DFormat::D3DFMT_A8R8G8B8:
+                m_format = D3DFORMAT::D3DFMT_A8R8G8B8;
+                break;
+            case D3DFormat::D3DFMT_YV12:
+                m_format = (D3DFORMAT)MAKEFOURCC('Y', 'V', '1', '2');
+                break;
+            default:
+                break;
+            }
             HRESULT hr = EnsureHWND();
             if (hr != S_OK)
             {
@@ -67,10 +91,15 @@ namespace Render {
 
             m_createResourceSuccess = CreateResource(videoWidth, videoHeight);
 
+            if (!m_createResourceSuccess)
+            {
+                return false;
+            }
+
             return true;
         }
 
-        void D3D11Image::WritePixels(IntPtr buffer, UInt32 videoWidth, UInt32 videoHeight)
+        void D3D11Image::WritePixels(IntPtr buffer)
         {
             if (!m_initializeD3DSuccess)
             {
@@ -107,6 +136,29 @@ namespace Render {
             }
         }
 
+        void D3D11Image::WritePixels(IntPtr yBuffer, UInt32 yStride, IntPtr uBuffer, UInt32 uStride, IntPtr vBuffer, UInt32 vStride)
+        {
+            if (!m_initializeD3DSuccess)
+            {
+                return;
+            }
+            if (!m_createResourceSuccess)
+            {
+                return;
+            }
+            if (!this->IsFrontBufferAvailable)
+            {
+                return;
+            }
+            if (IntPtr::Zero == m_backbuffer) return;
+            this->Lock();
+            FillD3D9Surface(yBuffer, yStride, uBuffer, uStride, vBuffer, vStride);
+            StretchSurface();
+            //CreateScene();
+            this->AddDirtyRect(m_imageSourceRect);
+            this->Unlock();
+        }
+
         bool D3D11Image::InitD3D()
         {
             // D3D Device
@@ -116,17 +168,17 @@ namespace Render {
             // D3D Present parameters
             D3DPRESENT_PARAMETERS d3dpp;
             ZeroMemory(&d3dpp, sizeof(d3dpp));
-            //d3dpp.Flags = D3DPRESENTFLAG_VIDEO | D3DPRESENTFLAG_OVERLAY_YCbCr_BT709 | D3DPRESENTFLAG_OVERLAY_LIMITEDRGB;
             d3dpp.Windowed = TRUE;
-            d3dpp.hDeviceWindow = m_hwnd;
-            d3dpp.BackBufferWidth = 1;
-            d3dpp.BackBufferHeight = 1;
+            d3dpp.hDeviceWindow = NULL;
             d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
-            d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_DEFAULT;
-            //d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
-            //d3dpp.BackBufferFormat = D3DFMT_UNKNOWN;
-            //d3dpp.BackBufferCount = 1;
-            //d3dpp.EnableAutoDepthStencil = FALSE;
+            d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+            d3dpp.BackBufferCount = 10;
+
+            if (m_createdHiddenWindow)
+            {
+                d3dpp.BackBufferWidth = 1920;
+                d3dpp.BackBufferHeight = 1080;
+            }
 
             // Create Direct3D Device
             pin_ptr<IDirect3DDevice9Ex*> ppDevice9Ex = &m_pDevice9Ex;
@@ -134,9 +186,9 @@ namespace Render {
             {
                 return false;
             }
-            DWORD behaviorFlags = D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE | D3DCREATE_HARDWARE_VERTEXPROCESSING;
-            IFC(m_pDirect3D9Ex->CreateDeviceEx(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL,
-                NULL, behaviorFlags,&d3dpp, NULL, ppDevice9Ex));
+            DWORD behaviorFlags = D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE;
+            auto h = m_pDirect3D9Ex->CreateDeviceEx(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL,
+                m_hwnd, behaviorFlags, &d3dpp, NULL, ppDevice9Ex);
             if (nullptr == m_pDevice9Ex)
             {
                 return false;
@@ -144,12 +196,13 @@ namespace Render {
             //IFC(m_pDevice9Ex->SetRenderState(D3DRS_LIGHTING, FALSE));
             //IFC(m_pDevice9Ex->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, FALSE));
             //IFC(m_pDevice9Ex->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE));
-            //IFC(m_pDevice9Ex->SetRenderState(D3DRS_ZENABLE, D3DZBUFFERTYPE::D3DZB_FALSE));
+            //IFC(m_pDevice9Ex->SetRenderState(D3DRS_ZENABLE, D3DZB_FALSE));
+            //IFC(m_pDevice9Ex->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR));
 
             if (m_direct3DSurfaceType == Direct3DSurfaceType::Direct3DSurface9)
             {
                 return true;
-            }
+            } 
 
             // D3D11 Device
             D3D_FEATURE_LEVEL featureLevels[] = {
@@ -160,8 +213,8 @@ namespace Render {
             pin_ptr<ID3D11DeviceContext*> ppD3D11DeviceContext = &m_pD3D11DeviceContext;
             IFC(D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL,
                 D3D11_CREATE_DEVICE_FLAG::D3D11_CREATE_DEVICE_BGRA_SUPPORT,
-                featureLevels, numFeatureLevels, D3D11_SDK_VERSION, ppD3D11Device, NULL,
-                ppD3D11DeviceContext));
+                featureLevels, numFeatureLevels, D3D11_SDK_VERSION, ppD3D11Device,
+                NULL, ppD3D11DeviceContext));
 
             return true;
         }
@@ -191,11 +244,12 @@ namespace Render {
 
         bool D3D11Image::CreateResource(int width, int height)
         {
-            HANDLE sharedHandle;
+            HANDLE sharedHandle = nullptr;
             HANDLE* pSharedHandle = &sharedHandle;
             if (m_direct3DSurfaceType == Direct3DSurfaceType::Direct3DSurface11)
             {
-                D3D11_TEXTURE2D_DESC desc = CD3D11_TEXTURE2D_DESC(DXGI_FORMAT_B8G8R8A8_UNORM, width, height);
+                D3D11_TEXTURE2D_DESC desc =
+                    CD3D11_TEXTURE2D_DESC(DXGI_FORMAT_B8G8R8A8_UNORM, width, height);
                 desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
                 desc.MipLevels = 1;
                 desc.MiscFlags = D3D11_RESOURCE_MISC_SHARED;
@@ -212,8 +266,8 @@ namespace Render {
                     &pD2D1Factory));
                 m_pD2D1Factory = pD2D1Factory;
                 D2D1_PIXEL_FORMAT pixelFormat{};
-                pixelFormat.format = DXGI_FORMAT::DXGI_FORMAT_UNKNOWN;
-                pixelFormat.alphaMode = D2D1_ALPHA_MODE::D2D1_ALPHA_MODE_PREMULTIPLIED;
+                pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
+                pixelFormat.alphaMode = D2D1_ALPHA_MODE_PREMULTIPLIED;
                 D2D1_RENDER_TARGET_PROPERTIES renderTargetProperties{};
                 renderTargetProperties.type = D2D1_RENDER_TARGET_TYPE_DEFAULT;
                 renderTargetProperties.pixelFormat = pixelFormat;
@@ -245,8 +299,8 @@ namespace Render {
                 m_pD2D1RenderTarget->GetDpi(&dpiX, &dpiY);
                 D2D1_BITMAP_PROPERTIES properties{};
                 properties.pixelFormat = {
-                    DXGI_FORMAT::DXGI_FORMAT_B8G8R8A8_UNORM,
-                    D2D1_ALPHA_MODE::D2D1_ALPHA_MODE_IGNORE
+                    DXGI_FORMAT_B8G8R8A8_UNORM,
+                    D2D1_ALPHA_MODE_PREMULTIPLIED
                 };
                 properties.dpiX = dpiX;
                 properties.dpiY = dpiY;
@@ -279,7 +333,7 @@ namespace Render {
             // Create Offscreen Plain Surface
             pin_ptr<IDirect3DSurface9*> ppSurface = &m_pSurface;
             IFC(m_pDevice9Ex->CreateOffscreenPlainSurfaceEx(width, height,
-                D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, ppSurface, nullptr, 0));
+                m_format, D3DPOOL_DEFAULT, ppSurface, nullptr, 0));
 
             if (nullptr == m_pSurface) return false;
 
@@ -320,6 +374,73 @@ namespace Render {
                         memcpy(destPtr, srcPtr, copyLen);
                         destPtr += stride;
                         srcPtr += bufferStride;
+                    }
+                }
+            }
+
+            lRet = m_pSurface->UnlockRect();
+            if (FAILED(lRet))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        bool D3D11Image::FillD3D9Surface(IntPtr yBuffer, UInt32 yStride, IntPtr uBuffer, UInt32 uStride, IntPtr vBuffer, UInt32 vStride)
+        {
+            D3DLOCKED_RECT d3dRect;
+            HRESULT lRet = m_pSurface->LockRect(&d3dRect, nullptr, D3DLOCK_DONOTWAIT);
+            if (FAILED(lRet))
+            {
+                return false;
+            }
+
+            byte* pSrc = (BYTE*)yBuffer.ToPointer();
+            byte* pDest = (BYTE*)d3dRect.pBits;
+
+            uint32_t stride = d3dRect.Pitch;
+            uint32_t w = m_imageSourceRect.Width, h = m_imageSourceRect.Height;
+            uint32_t copyLen = min(stride, w);
+            uint32_t ySize = stride * h;
+            uint32_t uvSize = stride * h >> 2;
+            byte* ySrcPtr = (BYTE*)yBuffer.ToPointer();
+            byte* uSrcPtr = (BYTE*)uBuffer.ToPointer();
+            byte* vSrcPtr = (BYTE*)vBuffer.ToPointer();
+            uint32_t halfHeight = h / 2;
+            uint32_t halfWidth = w / 2;
+            uint32_t halfStride = stride / 2;
+            uint32_t halfCopyLen = copyLen / 2;
+            uint32_t tmpVal2 = ySize * 5 / 4;
+
+            byte* yDestPtr = pDest;
+            byte* uDestPtr = pDest + tmpVal2;
+            byte* vDestPtr = pDest + ySize;
+
+            if (stride == w)
+            {
+                memcpy(yDestPtr, ySrcPtr, ySize);
+                memcpy(uDestPtr, uSrcPtr, uvSize);
+                memcpy(vDestPtr, vSrcPtr, uvSize);
+            }
+            else
+            {
+                if (w > 0 && h > 0 && stride > 0)
+                {
+                    for (uint32_t i = 0; i < h; ++i)
+                    {
+                        memcpy(yDestPtr, ySrcPtr, copyLen);
+                        yDestPtr += stride;
+                        ySrcPtr += w;
+                        if (i < halfHeight)
+                        {
+                            memcpy(uDestPtr, uSrcPtr, halfCopyLen);
+                            uDestPtr += halfStride;
+                            uSrcPtr += halfWidth;
+                            memcpy(vDestPtr, vSrcPtr, halfCopyLen);
+                            vDestPtr += halfStride;
+                            vSrcPtr += halfWidth;
+                        }
                     }
                 }
             }
@@ -407,6 +528,7 @@ namespace Render {
                     NULL,
                     NULL,
                     NULL);
+                m_createdHiddenWindow = true;
             }
 
         Cleanup:
