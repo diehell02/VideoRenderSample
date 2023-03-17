@@ -104,7 +104,7 @@ namespace WPFSample
             //AllocResizeBuffer(width, height);
             _width = (ushort)width;
             _height = (ushort)height;
-            _imageSource = new D3D11Image(Direct3DSurfaceType.Direct3DSurface11);
+            _imageSource = new D3D11Image(Direct3DSurfaceType.Direct3DSurface9);
             _imageSource.SetupSurface(width, height);
             _rect = new Int32Rect(0, 0, _width, _height);
             _bufferSize = _width * _height << 2;

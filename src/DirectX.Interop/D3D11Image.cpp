@@ -116,14 +116,14 @@ namespace Render {
             // D3D Present parameters
             D3DPRESENT_PARAMETERS d3dpp;
             ZeroMemory(&d3dpp, sizeof(d3dpp));
-            d3dpp.Flags = D3DPRESENTFLAG_VIDEO | D3DPRESENTFLAG_OVERLAY_YCbCr_BT709 | D3DPRESENTFLAG_OVERLAY_LIMITEDRGB;
+            //d3dpp.Flags = D3DPRESENTFLAG_VIDEO | D3DPRESENTFLAG_OVERLAY_YCbCr_BT709 | D3DPRESENTFLAG_OVERLAY_LIMITEDRGB;
             d3dpp.Windowed = TRUE;
             d3dpp.hDeviceWindow = m_hwnd;
             d3dpp.BackBufferWidth = 1;
             d3dpp.BackBufferHeight = 1;
             d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
             //d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
-            d3dpp.BackBufferFormat = D3DFMT_UNKNOWN;
+            //d3dpp.BackBufferFormat = D3DFMT_UNKNOWN;
             //d3dpp.BackBufferCount = 1;
             //d3dpp.EnableAutoDepthStencil = FALSE;
 
@@ -133,17 +133,17 @@ namespace Render {
             {
                 return false;
             }
-            IFC(m_pDirect3D9Ex->CreateDeviceEx(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, m_hwnd,
-                D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE | D3DCREATE_HARDWARE_VERTEXPROCESSING,
-                &d3dpp, NULL, ppDevice9Ex));
+            DWORD behaviorFlags = D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE | D3DCREATE_HARDWARE_VERTEXPROCESSING;
+            IFC(m_pDirect3D9Ex->CreateDeviceEx(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL,
+                NULL, behaviorFlags,&d3dpp, NULL, ppDevice9Ex));
             if (nullptr == m_pDevice9Ex)
             {
                 return false;
             }
-            IFC(m_pDevice9Ex->SetRenderState(D3DRS_LIGHTING, FALSE));
-            IFC(m_pDevice9Ex->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, FALSE));
-            IFC(m_pDevice9Ex->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE));
-            IFC(m_pDevice9Ex->SetRenderState(D3DRS_ZENABLE, D3DZBUFFERTYPE::D3DZB_FALSE));
+            //IFC(m_pDevice9Ex->SetRenderState(D3DRS_LIGHTING, FALSE));
+            //IFC(m_pDevice9Ex->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, FALSE));
+            //IFC(m_pDevice9Ex->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE));
+            //IFC(m_pDevice9Ex->SetRenderState(D3DRS_ZENABLE, D3DZBUFFERTYPE::D3DZB_FALSE));
 
             if (m_direct3DSurfaceType == Direct3DSurfaceType::Direct3DSurface9)
             {
@@ -190,13 +190,14 @@ namespace Render {
 
         bool D3D11Image::CreateResource(int width, int height)
         {
-            HANDLE sharedHandle = nullptr;
+            HANDLE sharedHandle;
             HANDLE* pSharedHandle = &sharedHandle;
             if (m_direct3DSurfaceType == Direct3DSurfaceType::Direct3DSurface11)
             {
                 D3D11_TEXTURE2D_DESC desc = CD3D11_TEXTURE2D_DESC(DXGI_FORMAT_B8G8R8A8_UNORM, width, height);
                 desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
                 desc.MipLevels = 1;
+                desc.MiscFlags = D3D11_RESOURCE_MISC_SHARED;
                 pin_ptr<ID3D11Texture2D*> ppD3D11Texture2D = &m_pD3D11Texture2D;
                 IFC(m_pD3D11Device->CreateTexture2D(&desc, NULL, ppD3D11Texture2D));
 
@@ -227,6 +228,7 @@ namespace Render {
                 pin_ptr<IDXGIResource1*> ppDXGIResource1 = &pDXGIResource1;
                 IFC(m_pD3D11Texture2D->QueryInterface(
                     __uuidof(IDXGIResource1), (void**)ppDXGIResource1));
+                *pSharedHandle = NULL;
                 IFC(pDXGIResource1->GetSharedHandle(pSharedHandle));
 
                 D3D11_VIEWPORT viewPort{};
@@ -241,7 +243,10 @@ namespace Render {
                 FLOAT dpiX, dpiY;
                 m_pD2D1RenderTarget->GetDpi(&dpiX, &dpiY);
                 D2D1_BITMAP_PROPERTIES properties{};
-                properties.pixelFormat = { DXGI_FORMAT::DXGI_FORMAT_B8G8R8X8_UNORM, D2D1_ALPHA_MODE::D2D1_ALPHA_MODE_IGNORE };
+                properties.pixelFormat = {
+                    DXGI_FORMAT::DXGI_FORMAT_B8G8R8A8_UNORM,
+                    D2D1_ALPHA_MODE::D2D1_ALPHA_MODE_IGNORE
+                };
                 properties.dpiX = dpiX;
                 properties.dpiY = dpiY;
                 pin_ptr<ID2D1Bitmap*> ppD2D1Bitmap = &m_pD2D1Bitmap;
@@ -254,7 +259,7 @@ namespace Render {
             IFC(m_pDevice9Ex->CreateTexture(width, height, 1, D3DUSAGE_RENDERTARGET,
                 D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, ppTexture, pSharedHandle));
             if (nullptr == m_pTexture) return false;
-            m_pDevice9Ex->SetTexture(0, m_pTexture);
+            //m_pDevice9Ex->SetTexture(0, m_pTexture);
 
             // Get Direct3D Surface
             pin_ptr<IDirect3DSurface9*> ppSurfaceLevel = &m_pSurfaceLevel;
@@ -265,10 +270,15 @@ namespace Render {
             m_imageSourceRect = Int32Rect(0, 0, width, height);
             SetImageSourceBackBuffer();
 
+            if (m_direct3DSurfaceType == Direct3DSurfaceType::Direct3DSurface11)
+            {
+                return true;
+            }
+
             // Create Offscreen Plain Surface
             pin_ptr<IDirect3DSurface9*> ppSurface = &m_pSurface;
             IFC(m_pDevice9Ex->CreateOffscreenPlainSurfaceEx(width, height,
-                D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT, ppSurface, nullptr, 0));
+                D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, ppSurface, nullptr, 0));
 
             if (nullptr == m_pSurface) return false;
 
@@ -291,18 +301,25 @@ namespace Render {
             uint32_t stride = d3dRect.Pitch;
             uint32_t bufferStride = m_width << 2;
             uint32_t w = m_width, h = m_height;
-            uint32_t copyLen = min(stride, bufferStride);
 
             byte* destPtr = pDest;
             byte* srcPtr = (BYTE*)buffer.ToPointer();
 
-            if (w > 0 && h > 0 && stride > 0)
+            if (stride == bufferStride)
             {
-                for (uint32_t i = 0; i < h; ++i)
+                memcpy(destPtr, srcPtr, bufferStride * h);
+            }
+            else
+            {
+                uint32_t copyLen = min(stride, bufferStride);
+                if (w > 0 && h > 0 && stride > 0)
                 {
-                    memcpy(destPtr, srcPtr, copyLen);
-                    destPtr += stride;
-                    srcPtr += bufferStride;
+                    for (uint32_t i = 0; i < h; ++i)
+                    {
+                        memcpy(destPtr, srcPtr, copyLen);
+                        destPtr += stride;
+                        srcPtr += bufferStride;
+                    }
                 }
             }
 
@@ -322,7 +339,9 @@ namespace Render {
                 return false;
             }
             m_pD2D1RenderTarget->BeginDraw();
-            m_pD2D1Bitmap->CopyFromMemory(NULL, buffer.ToPointer(), m_width << 2);
+            m_pD2D1RenderTarget->Clear(NULL);
+            D2D1_RECT_U rect = { 0, 0, (UINT32)width, (UINT32)height };
+            m_pD2D1Bitmap->CopyFromMemory(&rect, buffer.ToPointer(), m_width << 2);
             m_pD2D1RenderTarget->DrawBitmap(m_pD2D1Bitmap);
             m_pD2D1RenderTarget->EndDraw();
         }
