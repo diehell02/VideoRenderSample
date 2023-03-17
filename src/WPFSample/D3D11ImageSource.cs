@@ -9,12 +9,13 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using WPFSample.Utils.Threading;
 using Render.Source;
+using Render.Interop;
 
 namespace WPFSample
 {
-    internal class WriteableBitmapSource : IRenderSource
+    internal class D3D11ImageSource : IRenderSource
     {
-        private WriteableBitmap? _imageSource;
+        private D3D11Image? _imageSource;
         private ushort _width;
         private ushort _height;
         private bool _isFilled = false;
@@ -46,7 +47,7 @@ namespace WPFSample
             private set;
         }
 
-        public WriteableBitmapSource()
+        public D3D11ImageSource()
         {
             AllocResizeBuffer(1920, 1080);
         }
@@ -103,7 +104,8 @@ namespace WPFSample
             //AllocResizeBuffer(width, height);
             _width = (ushort)width;
             _height = (ushort)height;
-            _imageSource = new WriteableBitmap(_width, _height, 96, 96, PixelFormats.Bgr32, null);
+            _imageSource = new D3D11Image(Direct3DSurfaceType.Direct3DSurface11);
+            _imageSource.SetupSurface(width, height);
             _rect = new Int32Rect(0, 0, _width, _height);
             _bufferSize = _width * _height << 2;
             _source = new byte[_width * _height * 3 / 2];
@@ -125,47 +127,7 @@ namespace WPFSample
         /// <param name="videoHeight"></param>
         public void Fill(IntPtr yPtr, uint yStride, IntPtr uPtr, uint uStride, IntPtr vPtr, uint vStride, uint videoWidth, uint videoHeight)
         {
-            lock (_lockObj)
-            {
-                if (_isCleaned)
-                {
-                    Trace.WriteLine($"_isCleaned is true, return");
-                    return;
-                }
-
-                if (_imageSource is null)
-                {
-                    Trace.WriteLine($"_imageSource is null, return");
-                    return;
-                }
-
-                _isFilled = true;
-
-                _imageSource.Lock();
-                if (USE_LIBYUV)
-                {
-                    if (_width < videoWidth || _height < videoHeight)
-                    {
-                        // Convert I420 to ARGB with resize
-                        _frameConverter.I420ToARGB(yPtr, yStride, uPtr, uStride, vPtr, vStride, videoWidth, videoHeight, _imageSource.BackBuffer,
-                            _width, _height,
-                            _tempYPtr, _tempYStride, _tempUPtr, _tempUStride, _tempVPtr, _tempVStride);
-                    }
-                    else
-                    {
-                        // Convert I420 to ARGB without resize
-                        _frameConverter.I420ToARGB(yPtr, yStride, uPtr, uStride, vPtr, vStride, _width, _height, _imageSource.BackBuffer);
-                    }
-                }
-                else
-                {
-                    Marshal.Copy(yPtr, _source, 0, _source.Length);
-                    VideoFrameConverter.YUV2RGBA(_source, _dest, _width, _height);
-                    _imageSource.WritePixels(new Int32Rect(0, 0, _width, _height), _dest, _width << 2, 0);
-                }
-                _imageSource.AddDirtyRect(new Int32Rect(0, 0, _width, _height));
-                _imageSource.Unlock();
-            }
+            Fill(yPtr, yStride, uPtr, uStride, vPtr, vStride);
         }
 
         public void Fill(IntPtr yPtr, uint yStride, IntPtr uPtr, uint uStride, IntPtr vPtr, uint vStride)
@@ -186,20 +148,25 @@ namespace WPFSample
 
                 _isFilled = true;
 
-                _imageSource.Lock();
                 if (USE_LIBYUV)
                 {
-                    // Convert I420 to ARGB without resize
-                    _frameConverter.I420ToARGB(yPtr, yStride, uPtr, uStride, vPtr, vStride, _width, _height, _imageSource.BackBuffer);
+                    GCHandle arrayHandle = GCHandle.Alloc(_dest, GCHandleType.Pinned);
+                    IntPtr buffer = arrayHandle.AddrOfPinnedObject();
+                    _frameConverter.I420ToARGB(
+                        yPtr, yStride, uPtr, uStride, vPtr, vStride,
+                        _width, _height, buffer);
+                    _imageSource.WritePixels(buffer, _width, _height);
+                    arrayHandle.Free();
                 }
                 else
                 {
                     Marshal.Copy(yPtr, _source, 0, _source.Length);
                     VideoFrameConverter.YUV2RGBA(_source, _dest, _width, _height);
-                    _imageSource.WritePixels(new Int32Rect(0, 0, _width, _height), _dest, _width << 2, 0);
+                    GCHandle arrayHandle = GCHandle.Alloc(_dest, GCHandleType.Pinned);
+                    IntPtr buffer = arrayHandle.AddrOfPinnedObject();
+                    _imageSource.WritePixels(buffer, _width, _height);
+                    arrayHandle.Free();
                 }
-                _imageSource.AddDirtyRect(new Int32Rect(0, 0, _width, _height));
-                _imageSource.Unlock();
             }
         }
 
@@ -270,11 +237,11 @@ namespace WPFSample
                     }
 
                     Trace.WriteLine($"Clear Screen");
-                    _imageSource.Lock();
                     byte[] bytes = new byte[_bufferSize];
-                    Marshal.Copy(bytes, 0, _imageSource.BackBuffer, _bufferSize);
-                    _imageSource.AddDirtyRect(new Int32Rect(0, 0, _width, _height));
-                    _imageSource.Unlock();
+                    GCHandle arrayHandle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
+                    IntPtr buffer = arrayHandle.AddrOfPinnedObject();
+                    _imageSource.WritePixels(buffer, _width, _height);
+                    arrayHandle.Free();
                 }
             }, System.Windows.Threading.DispatcherPriority.Send);
         }

@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DirectX.Interop\DirectX.Interop.vcxproj" />
     <ProjectReference Include="..\Render.Interop\swig\Render.InteropCs.csproj" />
     <ProjectReference Include="..\Render.Source\Render.Source.csproj" />
   </ItemGroup>
