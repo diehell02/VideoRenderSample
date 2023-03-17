@@ -25,17 +25,8 @@ namespace WPFSample
         private Int32Rect _rect;
         private int _bufferSize;
         private readonly object _lockObj = new();
-        private IntPtr _tempYPtr;
-        private uint _tempYStride;
-        private uint _tempYLength;
-        private IntPtr _tempUPtr;
-        private uint _tempUStride;
-        private uint _tempULength;
-        private IntPtr _tempVPtr;
-        private uint _tempVStride;
-        private uint _tempVLength;
-        private byte[] _source;
-        private byte[] _dest;
+        private byte[]? _source;
+        private byte[]? _dest;
 
         private const bool USE_LIBYUV = true;
 
@@ -45,46 +36,6 @@ namespace WPFSample
         {
             get;
             private set;
-        }
-
-        public D3D11ImageSource()
-        {
-            AllocResizeBuffer(1920, 1080);
-        }
-
-        /// <summary>
-        /// Alloc the memory for resize
-        /// </summary>
-        /// <param name="width"></param>
-        /// <param name="height"></param>
-        private void AllocResizeBuffer(int width, int height)
-        {
-            _tempYStride = (uint)width;
-            int tempYLength = width * height;
-            if (_tempYPtr != IntPtr.Zero)
-            {
-                Marshal.FreeCoTaskMem(_tempYPtr);
-            }
-            _tempYPtr = Marshal.AllocCoTaskMem(tempYLength);
-            _tempYLength = (uint)tempYLength;
-
-            _tempUStride = (uint)(width >> 1);
-            int tempULength = (int)_tempUStride * (height >> 1);
-            if (_tempUPtr != IntPtr.Zero)
-            {
-                Marshal.FreeCoTaskMem(_tempUPtr);
-            }
-            _tempUPtr = Marshal.AllocCoTaskMem(tempULength);
-            _tempULength = (uint)tempULength;
-
-            _tempVStride = _tempUStride;
-            int tempVLength = (int)_tempVStride * (height >> 1);
-            if (_tempVPtr != IntPtr.Zero)
-            {
-                Marshal.FreeCoTaskMem(_tempVPtr);
-            }
-            _tempVPtr = Marshal.AllocCoTaskMem(tempVLength);
-            _tempVLength = (uint)tempVLength;
         }
 
         /// <summary>
@@ -104,7 +55,7 @@ namespace WPFSample
             //AllocResizeBuffer(width, height);
             _width = (ushort)width;
             _height = (ushort)height;
-            _imageSource = new D3D11Image(Direct3DSurfaceType.Direct3DSurface9);
+            _imageSource = new D3D11Image(Direct3DSurfaceType.Direct3DSurface11);
             _imageSource.SetupSurface(width, height);
             _rect = new Int32Rect(0, 0, _width, _height);
             _bufferSize = _width * _height << 2;
@@ -203,18 +154,6 @@ namespace WPFSample
             lock (_lockObj)
             {
                 _isCleaned = true;
-                if (_tempYPtr != IntPtr.Zero)
-                {
-                    Marshal.FreeCoTaskMem(_tempYPtr);
-                }
-                if (_tempUPtr != IntPtr.Zero)
-                {
-                    Marshal.FreeCoTaskMem(_tempUPtr);
-                }
-                if (_tempVPtr != IntPtr.Zero)
-                {
-                    Marshal.FreeCoTaskMem(_tempVPtr);
-                }
             }
         }
 

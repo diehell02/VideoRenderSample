@@ -96,8 +96,8 @@ namespace Render {
                 this->Unlock();
                 break;
             case Direct3DSurfaceType::Direct3DSurface11:
-                FillD3D11Surface(buffer, m_width, m_height);
                 this->Lock();
+                FillD3D11Surface(buffer, m_width, m_height);
                 //CreateScene();
                 this->AddDirtyRect(m_imageSourceRect);
                 this->Unlock();
@@ -122,6 +122,7 @@ namespace Render {
             d3dpp.BackBufferWidth = 1;
             d3dpp.BackBufferHeight = 1;
             d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
+            d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_DEFAULT;
             //d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
             //d3dpp.BackBufferFormat = D3DFMT_UNKNOWN;
             //d3dpp.BackBufferCount = 1;
@@ -234,8 +235,8 @@ namespace Render {
                 D3D11_VIEWPORT viewPort{};
                 viewPort.TopLeftX = 0;
                 viewPort.TopLeftY = 0;
-                viewPort.Width = width;
-                viewPort.Height = height;
+                viewPort.Width = (FLOAT)width;
+                viewPort.Height = (FLOAT)height;
                 viewPort.MinDepth = 0;
                 viewPort.MaxDepth = 1;
                 m_pD3D11DeviceContext->RSSetViewports(1, &viewPort);
@@ -339,7 +340,6 @@ namespace Render {
                 return false;
             }
             m_pD2D1RenderTarget->BeginDraw();
-            m_pD2D1RenderTarget->Clear(NULL);
             D2D1_RECT_U rect = { 0, 0, (UINT32)width, (UINT32)height };
             m_pD2D1Bitmap->CopyFromMemory(&rect, buffer.ToPointer(), m_width << 2);
             m_pD2D1RenderTarget->DrawBitmap(m_pD2D1Bitmap);

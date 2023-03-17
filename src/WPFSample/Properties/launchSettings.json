@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "WPFSample": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

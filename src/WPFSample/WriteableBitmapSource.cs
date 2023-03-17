@@ -33,8 +33,8 @@ namespace WPFSample
         private IntPtr _tempVPtr;
         private uint _tempVStride;
         private uint _tempVLength;
-        private byte[] _source;
-        private byte[] _dest;
+        private byte[]? _source;
+        private byte[]? _dest;
 
         private const bool USE_LIBYUV = true;
 
