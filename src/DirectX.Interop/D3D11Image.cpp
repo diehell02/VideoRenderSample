@@ -541,7 +541,7 @@ namespace Render {
                     // Create Direct3D Texture
                     pin_ptr<IDirect3DTexture9*> ppTexture = &m_pTexture;
                     IFC(m_pDevice9Ex->CreateTexture(m_width, m_height, 1,
-                        D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,
+                        D3DUSAGE_RENDERTARGET, D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT,
                         ppTexture, NULL));
                     if (nullptr == m_pTexture) return false;
 
@@ -678,7 +678,7 @@ namespace Render {
             }
             RECT rtVideo = { 0, 0, m_width, m_height };
             if (nullptr == m_pDevice9Ex) return;
-            m_pDevice9Ex->StretchRect(m_pSurface_YV12, &rtVideo, m_pSurfaceLevel, &rtVideo, D3DTEXF_NONE);
+            m_pDevice9Ex->StretchRect(m_pSurface_RGBA, &rtVideo, m_pSurfaceLevel, &rtVideo, D3DTEXF_NONE);
             this->AddDirtyRect(m_imageSourceRect);
             this->Unlock();
         }
