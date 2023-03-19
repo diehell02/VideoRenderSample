@@ -10,6 +10,7 @@ using WPFSample.Utils.Threading;
 using System.Diagnostics;
 using System.Windows.Media.Media3D;
 using Render.Source;
+using System.Windows.Interop;
 
 namespace WPFSample
 {
@@ -336,12 +337,13 @@ namespace WPFSample
             }
             Stretch stretch = Stretch;
             bool autoResize = AutoResize;
+            IntPtr hwnd = new WindowInteropHelper(Window.GetWindow(this)).Handle;
             _ = SetChildAsync(() =>
             {
 #if D3DImage
-                var videoView = new D3D11ImageElement();
+                var videoView = new D3DImageElement(hwnd);
 #elif D3D11Image
-                var videoView = new D3D11InteropImageElement();
+                var videoView = new D3D11ImageElement();
 #else
                 var videoView = new WriteableBitmapElement();
 #endif
