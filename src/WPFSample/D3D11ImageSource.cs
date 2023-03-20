@@ -40,6 +40,10 @@ namespace WPFSample
         public D3D11ImageSource()
         {
             _imageSource = new D3D11Image();
+            Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                Application.Current.Exit += (s, e) => D3D11Image.OnApplicationExit();
+            });
         }
 
         public D3D11ImageSource(IntPtr hwnd)
@@ -117,7 +121,7 @@ namespace WPFSample
                     _frameConverter.I420ToARGB(
                         yPtr, yStride, uPtr, uStride, vPtr, vStride,
                         _width, _height, buffer);
-                    _imageSource.WritePixels(buffer, RenderMode.DXGI_RGBA);
+                    _imageSource.WritePixels(buffer, RenderMode.DX9_RGBA);
                     arrayHandle.Free();
                 }
 #else

@@ -32,12 +32,6 @@ namespace Render {
         D3D11Image::!D3D11Image()
         {
             CleanupD3D();
-
-            if (m_hwnd)
-            {
-                DestroyWindow(m_hwnd);
-                UnregisterClass(d3dWindowClass, NULL);
-            }
         }
 
         bool D3D11Image::SetupSurface(int videoWidth, int videoHeight)
@@ -831,6 +825,15 @@ namespace Render {
             }
 
             return hr;
+        }
+
+        void D3D11Image::OnApplicationExit()
+        {
+            if (m_createdHiddenWindow)
+            {
+                DestroyWindow(m_hwnd);
+                UnregisterClass(d3dWindowClass, NULL);
+            }
         }
     }
 }

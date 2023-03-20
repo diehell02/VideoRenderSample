@@ -6,11 +6,13 @@
 #include <d3d11.h>
 #include <dxgi1_2.h>
 #include <d2d1.h>
+#include <msclr/lock.h>
 
 using namespace System;
 using namespace System::Windows;
 using namespace System::Windows::Media;
 using namespace System::Windows::Interop;
+using namespace msclr;
 
 namespace Render {
     namespace Interop {
@@ -34,9 +36,11 @@ namespace Render {
             void WritePixels(IntPtr yBuffer, UInt32 yStride, IntPtr uBuffer, UInt32 uStride, IntPtr vBuffer, UInt32 vStride);
             void WritePixels(HANDLE hSharedHandle);
 
+            static void OnApplicationExit();
+
         private:
             IntPtr m_backbuffer;
-            HWND m_hwnd;
+            static HWND m_hwnd;
             IDirect3D9Ex* m_pDirect3D9Ex = nullptr;
             IDirect3DDevice9Ex* m_pDevice9Ex;
             ID3D11Device* m_pD3D11Device;
@@ -47,11 +51,11 @@ namespace Render {
             UInt32 m_tempStride;
             int m_width;
             int m_height;
-            LPCWSTR d3dWindowClass = L"D3D11Image";
+            static LPCWSTR d3dWindowClass = L"D3D11Image";
             bool m_initializeD3DSuccess = false;
             bool m_createResourceSuccess = false;
             int m_stride;
-            bool m_createdHiddenWindow = false;
+            static bool m_createdHiddenWindow = false;
             D3DFORMAT m_format;
             bool m_areSurfacesInitialized = false;
             bool m_isD3DInitialized = false;
@@ -72,6 +76,8 @@ namespace Render {
             IDirect3DSurface9* m_pSurfaceLevel;
 
             RenderMode m_renderMode;
+
+            static Object^ m_lockObj = gcnew Object();
 
             bool InitD3D();
             bool InitD3D9();
