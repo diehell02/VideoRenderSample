@@ -8,14 +8,12 @@ namespace Render {
     namespace Interop {
         D3D11Image::D3D11Image(IntPtr hwnd)
         {
-            m_format = D3DFORMAT::D3DFMT_A8R8G8B8;
             m_hwnd = static_cast<HWND>(hwnd.ToPointer());
             this->IsFrontBufferAvailableChanged += gcnew System::Windows::DependencyPropertyChangedEventHandler(this, &D3D11Image::OnIsFrontBufferAvailableChanged);
         }
 
         D3D11Image::D3D11Image()
         {
-            m_format = D3DFORMAT::D3DFMT_A8R8G8B8;
             HRESULT hr = EnsureHWND();
             if (hr != S_OK)
             {
@@ -384,6 +382,8 @@ namespace Render {
         {
             HRESULT hr = S_OK;
 
+            lock l(m_hiddenWindowLock);
+
             if (!m_hwnd)
             {
                 WNDCLASS wndclass;
@@ -417,6 +417,8 @@ namespace Render {
                     NULL);
                 m_createdHiddenWindow = true;
             }
+
+            l.release();
             return hr;
         }
 

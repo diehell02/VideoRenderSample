@@ -6,11 +6,13 @@
 #include <d3d11.h>
 #include <dxgi1_2.h>
 #include <d2d1.h>
+#include <msclr/lock.h>
 
 using namespace System;
 using namespace System::Windows;
 using namespace System::Windows::Media;
 using namespace System::Windows::Interop;
+using namespace msclr;
 
 namespace Render {
     namespace Interop {
@@ -54,7 +56,6 @@ namespace Render {
             bool m_createResourceSuccess = false;
             int m_stride;
             static bool m_createdHiddenWindow = false;
-            D3DFORMAT m_format;
             bool m_areSurfacesInitialized = false;
             bool m_isD3DInitialized = false;
 
@@ -74,6 +75,8 @@ namespace Render {
             IDirect3DSurface9* m_pSurfaceLevel;
 
             RenderMode m_renderMode;
+
+            Object^ m_hiddenWindowLock = gcnew Object();
 
             bool InitD3D();
             bool InitD3D9();
