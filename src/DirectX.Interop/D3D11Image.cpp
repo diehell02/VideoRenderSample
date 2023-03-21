@@ -319,8 +319,10 @@ namespace Render {
 
             if (m_createdHiddenWindow)
             {
-                d3dpp.BackBufferWidth = 1920;
-                d3dpp.BackBufferHeight = 1080;
+                d3dpp.BackBufferWidth = 1;
+                d3dpp.BackBufferHeight = 1;
+                d3dpp.BackBufferCount = 10;
+                d3dpp.BackBufferFormat = D3DFMT_UNKNOWN;
             }
 
             // Create Direct3D Device
