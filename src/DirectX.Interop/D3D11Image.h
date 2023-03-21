@@ -6,13 +6,11 @@
 #include <d3d11.h>
 #include <dxgi1_2.h>
 #include <d2d1.h>
-#include <msclr/lock.h>
 
 using namespace System;
 using namespace System::Windows;
 using namespace System::Windows::Media;
 using namespace System::Windows::Interop;
-using namespace msclr;
 
 namespace Render {
     namespace Interop {
@@ -76,8 +74,6 @@ namespace Render {
             IDirect3DSurface9* m_pSurfaceLevel;
 
             RenderMode m_renderMode;
-
-            static Object^ m_lockObj = gcnew Object();
 
             bool InitD3D();
             bool InitD3D9();
