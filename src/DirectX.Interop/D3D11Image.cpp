@@ -152,7 +152,8 @@ namespace Render {
             if (m_backbuffer == IntPtr::Zero)
             {
                 m_backbuffer = (IntPtr)(void*)m_pSurfaceLevel;
-                this->SetBackBuffer(D3DResourceType::IDirect3DSurface9, m_backbuffer, true);
+                this->SetBackBuffer(D3DResourceType::IDirect3DSurface9,
+                    m_backbuffer);
             }
             RECT rtVideo = { 0, 0, m_width, m_height };
             if (nullptr == m_pDevice9Ex) return;
@@ -226,7 +227,7 @@ namespace Render {
             {
                 m_backbuffer = (IntPtr)(void*)pSurface9;
                 this->SetBackBuffer(D3DResourceType::IDirect3DSurface9,
-                    m_backbuffer, true);
+                    m_backbuffer);
             }
 
             // Produce Surface
@@ -315,13 +316,11 @@ namespace Render {
             d3dpp.hDeviceWindow = NULL;
             d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
             d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
-            //d3dpp.BackBufferCount = 10;
 
             if (m_createdHiddenWindow)
             {
                 d3dpp.BackBufferWidth = 1;
                 d3dpp.BackBufferHeight = 1;
-                d3dpp.BackBufferCount = 10;
                 d3dpp.BackBufferFormat = D3DFMT_UNKNOWN;
             }
 
@@ -376,7 +375,8 @@ namespace Render {
         void D3D11Image::SetImageSourceBackBuffer()
         {
             this->Lock();
-            this->SetBackBuffer(D3DResourceType::IDirect3DSurface9, m_backbuffer, true);
+            this->SetBackBuffer(D3DResourceType::IDirect3DSurface9,
+                m_backbuffer);
             this->Unlock();
         }
 
@@ -672,7 +672,8 @@ namespace Render {
             if (m_backbuffer == IntPtr::Zero)
             {
                 m_backbuffer = (IntPtr)(void*)m_pSurfaceLevel;
-                this->SetBackBuffer(D3DResourceType::IDirect3DSurface9, m_backbuffer, true);
+                this->SetBackBuffer(D3DResourceType::IDirect3DSurface9,
+                    m_backbuffer);
             }
             RECT rtVideo = { 0, 0, m_width, m_height };
             if (nullptr == m_pDevice9Ex) return;
@@ -751,7 +752,7 @@ namespace Render {
             {
                 m_backbuffer = (IntPtr)(void*)pSurface9;
                 this->SetBackBuffer(D3DResourceType::IDirect3DSurface9,
-                    m_backbuffer, true);
+                    m_backbuffer);
             }
 
             // Produce Surface
