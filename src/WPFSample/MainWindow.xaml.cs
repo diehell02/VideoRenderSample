@@ -71,7 +71,7 @@ namespace WPFSample
                             {
                                 break;
                             }
-                            VideoView videoView = new();
+                            VideoView2 videoView = new();
                             videoView.SetValue(Grid.RowProperty, i);
                             videoView.SetValue(Grid.ColumnProperty, j);
                             videoView.SetVideoSource(VideoSourceFactory.GetVideoSource());
