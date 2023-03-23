@@ -10,19 +10,19 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DefineConstants>$(DefineConstants);USE_LIBYUV;D3D11Image</DefineConstants>
+    <DefineConstants>$(DefineConstants);USE_LIBYUV;D3D11Image;DX_YUV</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DefineConstants>$(DefineConstants);USE_LIBYUV;D3D11Image</DefineConstants>
+    <DefineConstants>$(DefineConstants);USE_LIBYUV;D3D11Image;DX_YUV</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <DefineConstants>$(DefineConstants);USE_LIBYUV;D3D11Image</DefineConstants>
+    <DefineConstants>$(DefineConstants);USE_LIBYUV;D3D11Image;DX_YUV</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <DefineConstants>$(DefineConstants);USE_LIBYUV;D3D11Image</DefineConstants>
+    <DefineConstants>$(DefineConstants);USE_LIBYUV;D3D11Image;DX_YUV</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

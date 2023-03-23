@@ -7,6 +7,9 @@
 #include <dxgi1_2.h>
 #include <d2d1.h>
 #include <msclr/lock.h>
+#include "RenderMode.h"
+#include "RenderFormat.h"
+#include "ID3DImageHelper.h"
 
 using namespace System;
 using namespace System::Windows;
@@ -16,24 +19,21 @@ using namespace msclr;
 
 namespace Render {
     namespace Interop {
-        public enum class RenderMode
-        {
-            DX9_YV12 = 0,
-            DX9_RGBA = 1,
-            DXGI_RGBA = 2,
-            DXGI_Surface = 3
-        };
         public ref class D3D11Image : D3DImage
         {
         public:
-            D3D11Image::D3D11Image(IntPtr hwnd);
-            D3D11Image();
+            D3D11Image::D3D11Image(IntPtr hwnd,
+                RenderMode renderMode, RenderFormat renderFormat);
+            D3D11Image(RenderMode renderMode, RenderFormat renderFormat);
             ~D3D11Image();
             !D3D11Image();
 
-            bool SetupSurface(int videoWidth, int videoHeight);
-            void WritePixels(IntPtr buffer, RenderMode renderMode);
-            void WritePixels(IntPtr yBuffer, UInt32 yStride, IntPtr uBuffer, UInt32 uStride, IntPtr vBuffer, UInt32 vStride);
+            void SetupSurface(int width, int height);
+            void WritePixels(IntPtr buffer);
+            void WritePixels(
+                IntPtr yBuffer, UInt32 yStride,
+                IntPtr uBuffer, UInt32 uStride,
+                IntPtr vBuffer, UInt32 vStride);
             void WritePixels(HANDLE hSharedHandle);
 
             static void OnApplicationExit();
@@ -70,29 +70,22 @@ namespace Render {
             ID2D1Bitmap* m_pD2D1Bitmap = nullptr;
 
             IDirect3DTexture9* m_pTexture;
-            IDirect3DSurface9* m_pSurface_YV12;
-            IDirect3DSurface9* m_pSurface_RGBA;
+            IDirect3DSurface9* m_pSurface;
             IDirect3DSurface9* m_pSurfaceLevel;
 
             RenderMode m_renderMode;
+            RenderFormat m_renderFormat;
 
             Object^ m_hiddenWindowLock = gcnew Object();
 
-            bool InitD3D();
-            bool InitD3D9();
-            bool InitD3D11();
-            void CleanupD3D();
-            void CleanupSurfaces();
-            void OnIsFrontBufferAvailableChanged(System::Object^ sender, System::Windows::DependencyPropertyChangedEventArgs e);
+            ID3DImageHelper^ m_d3dImageHelper;
+
+            
+            void OnIsFrontBufferAvailableChanged(
+                Object^ sender,
+                DependencyPropertyChangedEventArgs e);
             void SetImageSourceBackBuffer();
             HRESULT EnsureHWND();
-            bool Initialize();
-            bool InitSurfaces();
-            void RenderToDXGI(IntPtr buffer, IDXGISurface* pDXGISurface, bool isNewSurface);
-            void WritePixelsToDX9(IntPtr buffer);
-            void WritePixelsToDXGI(IntPtr buffer);
-            void EnsureBackbuffer(RenderMode renderMode);
-            HRESULT CopySurface(IUnknown* pDst, IUnknown* pSrc, UINT width, UINT height);
         };
     }
 }

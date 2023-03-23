@@ -94,6 +94,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>_DEBUG;QUEUE_USE_CONFORMANT_NEW;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\libyuv\libyuv\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>dxgi.lib;d3d9.lib;d3d11.lib;d2d1.lib;d3d10_1.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -103,6 +104,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>WIN32;_DEBUG;QUEUE_USE_CONFORMANT_NEW;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\libyuv\libyuv\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>dxgi.lib;d3d9.lib;d3d11.lib;d2d1.lib;d3d10_1.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -112,6 +114,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>WIN32;NDEBUG;QUEUE_USE_CONFORMANT_NEW;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\libyuv\libyuv\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>dxgi.lib;d3d9.lib;d3d11.lib;d2d1.lib;d3d10_1.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -121,6 +124,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>NDEBUG;QUEUE_USE_CONFORMANT_NEW;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\libyuv\libyuv\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>dxgi.lib;d3d9.lib;d3d11.lib;d2d1.lib;d3d10_1.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -129,7 +133,12 @@
   <ItemGroup>
     <ClInclude Include="D3D11Image.h" />
     <ClInclude Include="D3D11InteropImage.h" />
+    <ClInclude Include="D3D9Helper.h" />
     <ClInclude Include="D3DImageEx.h" />
+    <ClInclude Include="DXGIHelper.h" />
+    <ClInclude Include="ID3DImageHelper.h" />
+    <ClInclude Include="RenderFormat.h" />
+    <ClInclude Include="RenderMode.h" />
     <ClInclude Include="Stdafx.h" />
     <ClInclude Include="SurfaceQueue.h" />
     <ClInclude Include="SurfaceQueueImpl.h" />
@@ -137,7 +146,9 @@
   <ItemGroup>
     <ClCompile Include="D3D11Image.cpp" />
     <ClCompile Include="D3D11InteropImage.cpp" />
+    <ClCompile Include="D3D9Helper.cpp" />
     <ClCompile Include="D3DImageEx.cpp" />
+    <ClCompile Include="DXGIHelper.cpp" />
     <ClCompile Include="Stdafx.cpp" />
     <ClCompile Include="SurfaceDevice10.cpp" />
     <ClCompile Include="SurfaceDevice11.cpp" />
@@ -146,6 +157,14 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="SurfaceQueue.inl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\libyuv\libyuv.vcxproj">
+      <Project>{0d046def-9f87-42a3-867e-f76507a64b73}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Render.Interop\Render.Interop.vcxproj">
+      <Project>{b4d924b6-04c2-45eb-b26c-ef9854ec3866}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

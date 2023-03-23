@@ -82,7 +82,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.\libyuv\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\libyuv\libyuv\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
@@ -93,6 +93,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\libyuv\libyuv\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies />
@@ -102,6 +103,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\libyuv\libyuv\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies />
@@ -111,7 +113,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.\libyuv\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\libyuv\libyuv\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
@@ -120,25 +122,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="FrameConverter.h" />
-    <ClInclude Include="libyuv\include\libyuv.h" />
-    <ClInclude Include="libyuv\include\libyuv\basic_types.h" />
-    <ClInclude Include="libyuv\include\libyuv\convert_argb.h" />
-    <ClInclude Include="libyuv\include\libyuv\cpu_id.h" />
-    <ClInclude Include="libyuv\include\libyuv\planar_functions.h" />
-    <ClInclude Include="libyuv\include\libyuv\row.h" />
-    <ClInclude Include="libyuv\include\libyuv\scale.h" />
-    <ClInclude Include="libyuv\include\libyuv\scale_row.h" />
-    <ClInclude Include="libyuv\include\libyuv\version.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FrameConverter.cpp" />
     <ClCompile Include="FrameConverter_wrap.cxx" />
-    <ClCompile Include="libyuv\source\convert_argb.cc" />
-    <ClCompile Include="libyuv\source\cpu_id.cc" />
-    <ClCompile Include="libyuv\source\planar_functions.cc" />
-    <ClCompile Include="libyuv\source\row_common.cc" />
-    <ClCompile Include="libyuv\source\scale.cc" />
-    <ClCompile Include="libyuv\source\scale_common.cc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <Target Name="_CheckForLanguageAndFeatureCombinationSupport" />
@@ -171,5 +158,10 @@ C:\swig\swig.exe -c++ -csharp -outdir "$(ProjectDir)\swig" "%(FullPath)"
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename)_wrap.cxx;%(Outputs)</Outputs>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\libyuv\libyuv.vcxproj">
+      <Project>{0d046def-9f87-42a3-867e-f76507a64b73}</Project>
+    </ProjectReference>
   </ItemGroup>
 </Project>

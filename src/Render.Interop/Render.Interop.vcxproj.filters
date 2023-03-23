@@ -13,61 +13,13 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="libyuv">
-      <UniqueIdentifier>{7ca9c372-7887-4849-adef-3e1e07db9c18}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="libyuv\include\libyuv\basic_types.h">
-      <Filter>libyuv</Filter>
-    </ClInclude>
-    <ClInclude Include="libyuv\include\libyuv\convert_argb.h">
-      <Filter>libyuv</Filter>
-    </ClInclude>
-    <ClInclude Include="libyuv\include\libyuv\cpu_id.h">
-      <Filter>libyuv</Filter>
-    </ClInclude>
-    <ClInclude Include="libyuv\include\libyuv\planar_functions.h">
-      <Filter>libyuv</Filter>
-    </ClInclude>
-    <ClInclude Include="libyuv\include\libyuv\row.h">
-      <Filter>libyuv</Filter>
-    </ClInclude>
-    <ClInclude Include="libyuv\include\libyuv\scale.h">
-      <Filter>libyuv</Filter>
-    </ClInclude>
-    <ClInclude Include="libyuv\include\libyuv\scale_row.h">
-      <Filter>libyuv</Filter>
-    </ClInclude>
-    <ClInclude Include="libyuv\include\libyuv\version.h">
-      <Filter>libyuv</Filter>
-    </ClInclude>
-    <ClInclude Include="libyuv\include\libyuv.h">
-      <Filter>libyuv</Filter>
-    </ClInclude>
     <ClInclude Include="FrameConverter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="libyuv\source\convert_argb.cc">
-      <Filter>libyuv</Filter>
-    </ClCompile>
-    <ClCompile Include="libyuv\source\cpu_id.cc">
-      <Filter>libyuv</Filter>
-    </ClCompile>
-    <ClCompile Include="libyuv\source\planar_functions.cc">
-      <Filter>libyuv</Filter>
-    </ClCompile>
-    <ClCompile Include="libyuv\source\row_common.cc">
-      <Filter>libyuv</Filter>
-    </ClCompile>
-    <ClCompile Include="libyuv\source\scale.cc">
-      <Filter>libyuv</Filter>
-    </ClCompile>
-    <ClCompile Include="libyuv\source\scale_common.cc">
-      <Filter>libyuv</Filter>
-    </ClCompile>
     <ClCompile Include="FrameConverter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

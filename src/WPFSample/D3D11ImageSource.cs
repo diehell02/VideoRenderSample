@@ -7,15 +7,15 @@ using System.Windows.Media.Imaging;
 using System.Windows;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
-using WPFSample.Utils.Threading;
-using Render.Source;
 using Render.Interop;
+using WPFSample.Utils.Threading;
+using WPFSample;
 
-namespace WPFSample
+namespace Render.Core
 {
     internal class D3D11ImageSource : IRenderSource
     {
-        private readonly D3D11Image _imageSource;
+        private D3D11Image? _imageSource;
         private ushort _width;
         private ushort _height;
         private bool _isFilled = false;
@@ -24,7 +24,7 @@ namespace WPFSample
         private bool _isCleaned = false;
         private Int32Rect _rect;
         private int _bufferSize;
-        private readonly object _lockObj = new();
+        private readonly object _lockObj = new object();
         private byte[]? _source;
         private byte[]? _dest;
         private readonly IntPtr _hwnd = IntPtr.Zero;
@@ -39,17 +39,11 @@ namespace WPFSample
 
         public D3D11ImageSource()
         {
-            _imageSource = new D3D11Image();
-            Application.Current.Dispatcher.InvokeAsync(() =>
-            {
-                Application.Current.Exit += (s, e) => D3D11Image.OnApplicationExit();
-            });
         }
 
         public D3D11ImageSource(IntPtr hwnd)
         {
             _hwnd = hwnd;
-            _imageSource = new D3D11Image(_hwnd);
         }
 
         /// <summary>
@@ -68,6 +62,16 @@ namespace WPFSample
 
             _width = (ushort)width;
             _height = (ushort)height;
+            var imageSource = _imageSource;
+            if (_hwnd == IntPtr.Zero)
+            {
+                _imageSource = new D3D11Image(RenderMode.DXGI, RenderFormat.NV12);
+            }
+            else
+            {
+                _imageSource = new D3D11Image(RenderMode.DXGI, RenderFormat.NV12);
+            }
+            imageSource?.Dispose();
             _imageSource?.SetupSurface(width, height);
             _rect = new Int32Rect(0, 0, _width, _height);
             _bufferSize = _width * _height << 2;
@@ -114,27 +118,36 @@ namespace WPFSample
 #if DX_YUV
                 _imageSource.WritePixels(yPtr, yStride, uPtr, uStride, vPtr, vStride);
 #else
-#if USE_LIBYUV
-                {
-                    GCHandle arrayHandle = GCHandle.Alloc(_dest, GCHandleType.Pinned);
-                    IntPtr buffer = arrayHandle.AddrOfPinnedObject();
-                    _frameConverter.I420ToARGB(
-                        yPtr, yStride, uPtr, uStride, vPtr, vStride,
-                        _width, _height, buffer);
-                    _imageSource.WritePixels(buffer, RenderMode.DX9_RGBA);
-                    arrayHandle.Free();
-                }
-#else
-                {
-                    Marshal.Copy(yPtr, _source, 0, _source.Length);
-                    VideoFrameConverter.YUV2RGBA(_source, _dest, _width, _height);
-                    GCHandle arrayHandle = GCHandle.Alloc(_dest, GCHandleType.Pinned);
-                    IntPtr buffer = arrayHandle.AddrOfPinnedObject();
-                    _imageSource.WritePixels(buffer, RenderMode.DXGI_RGBA);
-                    arrayHandle.Free();
-                }
+                GCHandle arrayHandle = GCHandle.Alloc(_dest, GCHandleType.Pinned);
+                IntPtr buffer = arrayHandle.AddrOfPinnedObject();
+                _frameConverter.I420ToARGB(
+                    yPtr, yStride, uPtr, uStride, vPtr, vStride,
+                    _width, _height, buffer);
+                _imageSource.WritePixels(buffer);
+                arrayHandle.Free();
 #endif
-#endif
+            }
+        }
+
+        public unsafe void Fill(void* sharedHandle, uint videoWidth, uint videoHeight)
+        {
+            lock (_lockObj)
+            {
+                if (_isCleaned)
+                {
+                    Trace.WriteLine($"_isCleaned is true, return");
+                    return;
+                }
+
+                if (_imageSource is null)
+                {
+                    Trace.WriteLine($"_imageSource is null, return");
+                    return;
+                }
+
+                _isFilled = true;
+
+                _imageSource.WritePixels(sharedHandle);
             }
         }
 
@@ -193,11 +206,7 @@ namespace WPFSample
                     }
 
                     Trace.WriteLine($"Clear Screen");
-                    byte[] bytes = new byte[_bufferSize];
-                    GCHandle arrayHandle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
-                    IntPtr buffer = arrayHandle.AddrOfPinnedObject();
-                    _imageSource.WritePixels(buffer, RenderMode.DX9_RGBA);
-                    arrayHandle.Free();
+                    _imageSource.WritePixels(IntPtr.Zero);
                 }
             }, System.Windows.Threading.DispatcherPriority.Send);
         }

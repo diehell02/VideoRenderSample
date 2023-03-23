@@ -42,6 +42,8 @@ D3DFORMAT DXGIToCrossAPID3D9Format(DXGI_FORMAT Format)
             return D3DFMT_A2B10G10R10;
         case DXGI_FORMAT_R16G16B16A16_FLOAT: 
             return D3DFMT_A16B16G16R16F;
+        case DXGI_FORMAT_NV12:
+            return (D3DFORMAT)MAKEFOURCC('N', 'V', '1', '2');;
         default:
             return D3DFMT_UNKNOWN;
     };
