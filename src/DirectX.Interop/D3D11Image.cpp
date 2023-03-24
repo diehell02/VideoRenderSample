@@ -25,6 +25,8 @@ namespace Render {
             default:
                 break;
             }
+            m_d3dImageHelper->SetD3DImage(this);
+            m_d3dImageHelper->SetHwnd(m_hwnd);
         }
 
         D3D11Image::D3D11Image(RenderMode renderMode, RenderFormat renderFormat)
@@ -50,6 +52,8 @@ namespace Render {
             default:
                 break;
             }
+            m_d3dImageHelper->SetD3DImage(this);
+            m_d3dImageHelper->SetHwnd(m_hwnd);
         }
 
         D3D11Image::~D3D11Image()

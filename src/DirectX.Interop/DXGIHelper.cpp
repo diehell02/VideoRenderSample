@@ -399,7 +399,7 @@ bool Render::Interop::DXGIHelper::InitSurfaces()
     ZeroMemory(&desc, sizeof(desc));
     desc.Width = m_width;
     desc.Height = m_height;
-    desc.Format = m_dxgi_format;
+    desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
     desc.NumSurfaces = 1;
     desc.MetaDataSize = sizeof(int);
     desc.Flags = SURFACE_QUEUE_FLAG_SINGLE_THREADED;
@@ -602,7 +602,7 @@ void Render::Interop::DXGIHelper::CreateBitmap(IDXGISurface* pDXGISurface)
         D2D1_FACTORY_TYPE::D2D1_FACTORY_TYPE_SINGLE_THREADED,
         &pD2D1Factory);
     D2D1_PIXEL_FORMAT pixelFormat{};
-    pixelFormat.format = m_dxgi_format;
+    pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
     pixelFormat.alphaMode = D2D1_ALPHA_MODE_PREMULTIPLIED;
     D2D1_RENDER_TARGET_PROPERTIES renderTargetProperties{};
     renderTargetProperties.type = D2D1_RENDER_TARGET_TYPE_DEFAULT;
@@ -621,7 +621,7 @@ void Render::Interop::DXGIHelper::CreateBitmap(IDXGISurface* pDXGISurface)
     D2D1_BITMAP_PROPERTIES properties{};
     properties.pixelFormat = {
         m_dxgi_format,
-        D2D1_ALPHA_MODE_PREMULTIPLIED
+        D2D1_ALPHA_MODE_UNKNOWN
     };
     properties.dpiX = dpiX;
     properties.dpiY = dpiY;

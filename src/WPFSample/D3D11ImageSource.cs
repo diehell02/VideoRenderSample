@@ -9,9 +9,8 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using Render.Interop;
 using WPFSample.Utils.Threading;
-using WPFSample;
 
-namespace Render.Core
+namespace WPFSample
 {
     internal class D3D11ImageSource : IRenderSource
     {
