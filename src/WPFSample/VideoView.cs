@@ -337,13 +337,13 @@ namespace WPFSample
             }
             Stretch stretch = Stretch;
             bool autoResize = AutoResize;
-            IntPtr hwnd = new WindowInteropHelper(Window.GetWindow(this)).Handle;
+            IntPtr hwnd = Render.Interop.D3DHiddenWindowHelper.Instance.Handle;
             _ = SetChildAsync(() =>
             {
 #if D3DImage
                 var videoView = new D3DImageElement(hwnd);
 #elif D3D11Image
-                var videoView = new D3D11ImageElement();
+                var videoView = new D3D11ImageElement(hwnd);
 #else
                 var videoView = new WriteableBitmapElement();
 #endif

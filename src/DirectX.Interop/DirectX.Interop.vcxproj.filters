@@ -45,7 +45,10 @@
     <ClInclude Include="RenderMode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RenderFormat.h">
+    <ClInclude Include="FrameFormat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D3DHiddenWindowHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -78,6 +81,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="DXGIHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D3DHiddenWindowHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

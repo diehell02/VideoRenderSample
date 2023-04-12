@@ -36,10 +36,6 @@ namespace WPFSample
             private set;
         }
 
-        public D3D11ImageSource()
-        {
-        }
-
         public D3D11ImageSource(IntPtr hwnd)
         {
             _hwnd = hwnd;
@@ -62,14 +58,7 @@ namespace WPFSample
             _width = (ushort)width;
             _height = (ushort)height;
             var imageSource = _imageSource;
-            if (_hwnd == IntPtr.Zero)
-            {
-                _imageSource = new D3D11Image(RenderMode.DXGI, RenderFormat.NV12);
-            }
-            else
-            {
-                _imageSource = new D3D11Image(RenderMode.DXGI, RenderFormat.NV12);
-            }
+            _imageSource = new D3D11Image(_hwnd, FrameFormat.YU12);
             imageSource?.Dispose();
             _imageSource?.SetupSurface(width, height);
             _rect = new Int32Rect(0, 0, _width, _height);

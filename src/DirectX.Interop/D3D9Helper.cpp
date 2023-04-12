@@ -1,25 +1,6 @@
 #include "D3D9Helper.h"
 #include <libyuv.h>
 
-Render::Interop::D3D9Helper::D3D9Helper(RenderFormat format)
-{
-    m_format = format;
-    switch (format)
-    {
-    case Render::Interop::RenderFormat::YV12:
-        m_d3dFormat = (D3DFORMAT)MAKEFOURCC('Y', 'V', '1', '2');
-        break;
-    case Render::Interop::RenderFormat::NV12:
-        m_d3dFormat = (D3DFORMAT)MAKEFOURCC('N', 'V', '1', '2');
-        break;
-    case Render::Interop::RenderFormat::B8G8R8A8:
-        m_d3dFormat = D3DFORMAT::D3DFMT_A8B8G8R8;
-        break;
-    default:
-        break;
-    }
-}
-
 void Render::Interop::D3D9Helper::WritePixels(IntPtr buffer)
 {
     if (!Initialize())
@@ -34,47 +15,20 @@ void Render::Interop::D3D9Helper::WritePixels(IntPtr buffer)
     if (IntPtr::Zero != buffer)
     {
         D3DLOCKED_RECT d3dRect;
-        if (nullptr == m_pSurface)
+        if (nullptr == m_pSurfaceRGBA)
         {
             goto UnlockD3DImage;
         }
-        HRESULT lRet = m_pSurface->LockRect(&d3dRect, nullptr, D3DLOCK_DONOTWAIT);
+        HRESULT lRet = m_pSurfaceRGBA->LockRect(&d3dRect, nullptr, D3DLOCK_DONOTWAIT);
         if (FAILED(lRet))
         {
             goto UnlockD3DImage;
         }
 
-        switch (m_format)
-        {
-        case Render::Interop::RenderFormat::YV12:
-            libyuv::ARGBToI420((uint8_t*)buffer.ToPointer(), m_width << 2,
-                (uint8_t*)yBuffer, yStride,
-                (uint8_t*)uBuffer, uStride,
-                (uint8_t*)vBuffer, vStride,
-                m_width, m_height);
-            FillYV12((uint8_t*)yBuffer, yStride,
-                (uint8_t*)uBuffer, uStride,
-                (uint8_t*)vBuffer, vStride,
-                (uint8_t*)d3dRect.pBits, d3dRect.Pitch);
-            break;
-        case Render::Interop::RenderFormat::NV12:
-            libyuv::ARGBToNV12((uint8_t*)buffer.ToPointer(), m_width << 2,
-                (uint8_t*)yBuffer, yStride,
-                (uint8_t*)uvBuffer, uvStride,
-                m_width, m_height);
-            FillNV12((uint8_t*)yBuffer, yStride,
-                (uint8_t*)uvBuffer, uvStride,
-                (uint8_t*)d3dRect.pBits, d3dRect.Pitch);
-            break;
-        case Render::Interop::RenderFormat::B8G8R8A8:
-            FillB8G8R8A8((uint8_t*)buffer.ToPointer(), m_width << 2,
-                (uint8_t*)d3dRect.pBits, d3dRect.Pitch);
-            break;
-        default:
-            break;
-        }
+        FillB8G8R8A8((uint8_t*)buffer.ToPointer(), m_width << 2,
+            (uint8_t*)d3dRect.pBits, d3dRect.Pitch);
 
-        lRet = m_pSurface->UnlockRect();
+        lRet = m_pSurfaceRGBA->UnlockRect();
         if (FAILED(lRet))
         {
             goto UnlockD3DImage;
@@ -90,7 +44,7 @@ void Render::Interop::D3D9Helper::WritePixels(IntPtr buffer)
     RECT rtVideo = { 0, 0, m_width, m_height };
     if (m_pDevice9Ex)
     {
-        m_pDevice9Ex->StretchRect(m_pSurface, &rtVideo, m_pSurfaceLevel, &rtVideo, D3DTEXF_NONE);
+        m_pDevice9Ex->StretchRect(m_pSurfaceRGBA, &rtVideo, m_pSurfaceLevel, &rtVideo, D3DTEXF_NONE);
     }
     m_d3dImage->AddDirtyRect(m_imageSourceRect);
 UnlockD3DImage:
@@ -113,45 +67,22 @@ void Render::Interop::D3D9Helper::WritePixels(IntPtr yBuffer, UInt32 yStride, In
         && vBuffer != IntPtr::Zero && vStride != 0)
     {
         D3DLOCKED_RECT d3dRect;
-        HRESULT lRet = m_pSurface->LockRect(&d3dRect, nullptr, D3DLOCK_DONOTWAIT);
+        if (nullptr == m_pSurfaceYV12)
+        {
+            goto UnlockD3DImage;
+        }
+        HRESULT lRet = m_pSurfaceYV12->LockRect(&d3dRect, nullptr, D3DLOCK_DONOTWAIT);
         if (FAILED(lRet))
         {
             goto UnlockD3DImage;
         }
 
-        switch (m_format)
-        {
-        case Render::Interop::RenderFormat::YV12:
-            FillYV12((uint8_t*)yBuffer.ToPointer(), yStride,
-                (uint8_t*)uBuffer.ToPointer(), uStride,
-                (uint8_t*)vBuffer.ToPointer(), vStride,
-                (uint8_t*)d3dRect.pBits, d3dRect.Pitch);
-            break;
-        case Render::Interop::RenderFormat::NV12:
-            libyuv::I420ToNV12((uint8_t*)yBuffer.ToPointer(), yStride,
-                (uint8_t*)uBuffer.ToPointer(), uStride,
-                (uint8_t*)vBuffer.ToPointer(), vStride,
-                (uint8_t*)this->yBuffer, this->yStride,
-                (uint8_t*)this->uvBuffer, this->uvStride,
-                m_width, m_height);
-            FillNV12((uint8_t*)this->yBuffer, yStride,
-                (uint8_t*)this->uvBuffer, uvStride,
-                (uint8_t*)d3dRect.pBits, d3dRect.Pitch);
-            break;
-        case Render::Interop::RenderFormat::B8G8R8A8:
-            libyuv::I420ToARGB((uint8_t*)yBuffer.ToPointer(), yStride,
-                (uint8_t*)uBuffer.ToPointer(), uStride,
-                (uint8_t*)vBuffer.ToPointer(), vStride,
-                (uint8_t*)this->buffer, this->stride,
-                m_width, m_height);
-            FillB8G8R8A8((uint8_t*)this->buffer, this->stride,
-                (uint8_t*)d3dRect.pBits, d3dRect.Pitch);
-            break;
-        default:
-            break;
-        }
+        FillYV12((uint8_t*)yBuffer.ToPointer(), yStride,
+            (uint8_t*)uBuffer.ToPointer(), uStride,
+            (uint8_t*)vBuffer.ToPointer(), vStride,
+            (uint8_t*)d3dRect.pBits, d3dRect.Pitch);
 
-        lRet = m_pSurface->UnlockRect();
+        lRet = m_pSurfaceYV12->UnlockRect();
         if (FAILED(lRet))
         {
             goto UnlockD3DImage;
@@ -167,7 +98,7 @@ void Render::Interop::D3D9Helper::WritePixels(IntPtr yBuffer, UInt32 yStride, In
     if (m_pDevice9Ex)
     {
         RECT rtVideo = { 0, 0, m_width, m_height };
-        m_pDevice9Ex->StretchRect(m_pSurface, &rtVideo,
+        m_pDevice9Ex->StretchRect(m_pSurfaceYV12, &rtVideo,
             m_pSurfaceLevel, &rtVideo, D3DTEXF_NONE);
     }
     m_d3dImage->AddDirtyRect(m_imageSourceRect);
@@ -301,10 +232,14 @@ bool Render::Interop::D3D9Helper::InitSurfaces()
         if (nullptr == m_pSurfaceLevel) return false;
 
         // Create Offscreen Plain Surface
-        pin_ptr<IDirect3DSurface9*> ppSurface = &m_pSurface;
+        pin_ptr<IDirect3DSurface9*> ppSurfaceYV12 = &m_pSurfaceYV12;
         IFC(m_pDevice9Ex->CreateOffscreenPlainSurfaceEx(m_width, m_height,
-            m_d3dFormat, D3DPOOL_DEFAULT,
-            ppSurface, nullptr, 0));
+            (D3DFORMAT)MAKEFOURCC('Y', 'V', '1', '2'), D3DPOOL_DEFAULT,
+            ppSurfaceYV12, nullptr, 0));
+        pin_ptr<IDirect3DSurface9*> ppSurfaceRGBA = &m_pSurfaceRGBA;
+        IFC(m_pDevice9Ex->CreateOffscreenPlainSurfaceEx(m_width, m_height,
+            D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,
+            ppSurfaceRGBA, nullptr, 0));
 
         m_areSurfacesInitialized = true;
     }
@@ -331,7 +266,8 @@ void Render::Interop::D3D9Helper::CleanupSurfaces()
     m_areSurfacesInitialized = false;
 
     SAFE_RELEASE(m_pTexture);
-    SAFE_RELEASE(m_pSurface);
+    SAFE_RELEASE(m_pSurfaceYV12);
+    SAFE_RELEASE(m_pSurfaceRGBA);
     SAFE_RELEASE(m_pSurfaceLevel);
 }
 
@@ -359,55 +295,6 @@ void Render::Interop::D3D9Helper::SetupSurface(int width, int height)
 
     CleanupSurfaces();
     WritePixels(IntPtr::Zero);
-
-    switch (m_format)
-    {
-    case Render::Interop::RenderFormat::YV12:
-        if (yBuffer)
-        {
-            yStride = width;
-            delete yBuffer;
-            yBuffer = new char[yStride * height];
-        }
-        if (uBuffer)
-        {
-            uStride = (width >> 1);
-            delete uBuffer;
-            uBuffer = new char[uStride * (height >> 1)];
-        }
-        if (vBuffer)
-        {
-            vStride = (width >> 1);
-            delete vBuffer;
-            vBuffer = new char[vStride * (height >> 1)];
-        }
-        break;
-    case Render::Interop::RenderFormat::NV12:
-        if (yBuffer)
-        {
-            yStride = width;
-            delete yBuffer;
-            yBuffer = new char[yStride * height];
-        }
-        if (uvBuffer)
-        {
-            uvStride = (width);
-            delete uvBuffer;
-            uvBuffer = new char[uvStride * (height >> 1)];
-        }
-        delete uvBuffer;
-        break;
-    case Render::Interop::RenderFormat::B8G8R8A8:
-        if (buffer)
-        {
-            stride = width << 2;
-            delete buffer;
-            buffer = new char[stride * height];
-        }
-        break;
-    default:
-        break;
-    }
 }
 
 void Render::Interop::D3D9Helper::FillYV12(uint8_t* src_y, int stride_y,

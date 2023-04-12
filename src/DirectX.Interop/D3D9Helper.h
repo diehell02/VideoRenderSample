@@ -12,8 +12,6 @@ namespace Render {
         ref class D3D9Helper : ID3DImageHelper
         {
         public:
-            D3D9Helper(RenderFormat format);
-
             void WritePixels(IntPtr buffer) override;
             void WritePixels(
                 IntPtr yBuffer, UInt32 yStride,
@@ -43,47 +41,21 @@ namespace Render {
                 uint8_t* dst, int pitch);
 
         private:
-            D3DImage^ m_d3dImage = nullptr;
-            IntPtr m_backbuffer;
-            static HWND m_hwnd;
-            IDirect3D9Ex* m_pDirect3D9Ex = nullptr;
-            IDirect3DDevice9Ex* m_pDevice9Ex;
-            Int32Rect m_imageSourceRect;
-            int m_width;
-            int m_height;
-            bool m_areSurfacesInitialized = false;
-            bool m_isD3DInitialized = false;
+            D3DImage^               m_d3dImage = nullptr;
+            IntPtr                  m_backbuffer;
+            HWND                    m_hwnd;
+            IDirect3D9Ex*           m_pDirect3D9Ex = nullptr;
+            IDirect3DDevice9Ex*     m_pDevice9Ex;
+            Int32Rect               m_imageSourceRect;
+            int                     m_width;
+            int                     m_height;
+            bool                    m_areSurfacesInitialized = false;
+            bool                    m_isD3DInitialized = false;
 
-            IDirect3DTexture9* m_pTexture;
-            IDirect3DSurface9* m_pSurface;
-            IDirect3DSurface9* m_pSurfaceLevel;
-            D3DFORMAT m_d3dFormat;
-            RenderFormat m_format;
-
-#pragma region YV12
-
-            char* yBuffer = nullptr;
-            char* uBuffer = nullptr;
-            char* vBuffer = nullptr;
-            int yStride = 0;
-            int uStride = 0;
-            int vStride = 0;
-
-#pragma endregion
-
-#pragma region NV12
-
-            char* uvBuffer = nullptr;
-            int uvStride = 0;
-
-#pragma endregion
-
-#pragma region ARGB
-
-            char* buffer = nullptr;
-            int stride = 0;
-
-#pragma endregion
+            IDirect3DTexture9*      m_pTexture;
+            IDirect3DSurface9*      m_pSurfaceYV12;
+            IDirect3DSurface9*      m_pSurfaceRGBA;
+            IDirect3DSurface9*      m_pSurfaceLevel;
         };
 
     }

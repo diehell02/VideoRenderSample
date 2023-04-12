@@ -22,10 +22,36 @@
 #include <d3d11.h>
 #include <dxgi1_2.h>
 #include <d2d1.h>
-
+#include <d2d1_1.h>
+#include <d2d1_3.h>
 
 #define IFC(x) { hr = (x); if (FAILED(hr)) { goto Cleanup; }}
 #define IFC2(hr) { if (FAILED(hr)) { goto Cleanup; }}
 #define IFF(hr) { if (FAILED(hr)) return false; }
 #define ReleaseInterface(x) { if (NULL != x) { x->Release(); x = NULL; }}
 #define SAFE_RELEASE(punk)  { if ((punk) != nullptr) { (punk)->Release(); (punk) = nullptr; }}
+
+#define MCH_VERIFY_RETURN(Expr, Fail_Ret)\
+    if(!(Expr))\
+    {\
+        return Fail_Ret;\
+    }\
+}
+
+#define MCH_VERIFY(Expr)\
+    if(!(Expr))\
+    {\
+        return {};\
+    }
+
+#define MCH_VERIFY_VOID(Expr)\
+    if(!(Expr))\
+    {\
+        return;\
+    }
+
+#define MCH_VERIFY_BREAK(Expr)\
+    if(!(Expr))\
+    {\
+        break;\
+    }

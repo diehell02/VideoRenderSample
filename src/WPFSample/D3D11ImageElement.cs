@@ -9,11 +9,6 @@ namespace WPFSample
 {
     internal class D3D11ImageElement : VideoElement
     {
-        public D3D11ImageElement()
-        {
-            _render = new D3D11ImageSource();
-        }
-
         public D3D11ImageElement(IntPtr hwnd)
         {
             _render = new D3D11ImageSource(hwnd);

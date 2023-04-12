@@ -134,10 +134,11 @@
     <ClInclude Include="D3D11Image.h" />
     <ClInclude Include="D3D11InteropImage.h" />
     <ClInclude Include="D3D9Helper.h" />
+    <ClInclude Include="D3DHiddenWindowHelper.h" />
     <ClInclude Include="D3DImageEx.h" />
     <ClInclude Include="DXGIHelper.h" />
     <ClInclude Include="ID3DImageHelper.h" />
-    <ClInclude Include="RenderFormat.h" />
+    <ClInclude Include="FrameFormat.h" />
     <ClInclude Include="RenderMode.h" />
     <ClInclude Include="Stdafx.h" />
     <ClInclude Include="SurfaceQueue.h" />
@@ -147,6 +148,7 @@
     <ClCompile Include="D3D11Image.cpp" />
     <ClCompile Include="D3D11InteropImage.cpp" />
     <ClCompile Include="D3D9Helper.cpp" />
+    <ClCompile Include="D3DHiddenWindowHelper.cpp" />
     <ClCompile Include="D3DImageEx.cpp" />
     <ClCompile Include="DXGIHelper.cpp" />
     <ClCompile Include="Stdafx.cpp" />

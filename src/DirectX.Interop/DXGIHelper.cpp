@@ -1,27 +1,11 @@
 #include "DXGIHelper.h"
 #include <libyuv.h>
 
+#define WIDTH 640
+#define HEIGHT 480
+
 REFIID                  surfaceIDDXGI = __uuidof(IDXGISurface);
 REFIID                  surfaceID9 = __uuidof(IDirect3DTexture9);
-
-Render::Interop::DXGIHelper::DXGIHelper(RenderFormat format)
-{
-    m_format = format;
-    switch (format)
-    {
-    case Render::Interop::RenderFormat::YV12:
-        m_dxgi_format = DXGI_FORMAT::DXGI_FORMAT_UNKNOWN;
-        break;
-    case Render::Interop::RenderFormat::NV12:
-        m_dxgi_format = DXGI_FORMAT::DXGI_FORMAT_NV12;
-        break;
-    case Render::Interop::RenderFormat::B8G8R8A8:
-        m_dxgi_format = DXGI_FORMAT::DXGI_FORMAT_B8G8R8A8_UNORM;
-        break;
-    default:
-        break;
-    }
-}
 
 void Render::Interop::DXGIHelper::WritePixels(IntPtr buffer)
 {
@@ -64,7 +48,7 @@ void Render::Interop::DXGIHelper::WritePixels(IntPtr buffer)
 
     if (isNewSurface)
     {
-        CreateBitmap(pDXGISurface);
+        InitRenderTarget(pDXGISurface);
     }
 
     RenderToDXGI(buffer, pDXGISurface);
@@ -96,10 +80,11 @@ void Render::Interop::DXGIHelper::WritePixels(IntPtr buffer)
     // Flush the AB queue - use "do not wait" here, we'll block at the top of the *next* call if we need to
     m_ABProducer->Flush(SURFACE_QUEUE_FLAG_DO_NOT_WAIT, NULL);
 
+    m_d3dImage->AddDirtyRect(m_imageSourceRect);
+
 Cleanup:
     if (fNeedUnlock)
     {
-        m_d3dImage->AddDirtyRect(m_imageSourceRect);
         m_d3dImage->Unlock();
     }
 
@@ -153,7 +138,7 @@ void Render::Interop::DXGIHelper::WritePixels(IntPtr yBuffer, UInt32 yStride, In
 
     if (isNewSurface)
     {
-        CreateBitmap(pDXGISurface);
+        InitRenderTarget(pDXGISurface);
     }
 
     RenderToDXGI(yBuffer, yStride, uBuffer, uStride, vBuffer, vStride, pDXGISurface);
@@ -185,10 +170,11 @@ void Render::Interop::DXGIHelper::WritePixels(IntPtr yBuffer, UInt32 yStride, In
     // Flush the AB queue - use "do not wait" here, we'll block at the top of the *next* call if we need to
     m_ABProducer->Flush(SURFACE_QUEUE_FLAG_DO_NOT_WAIT, NULL);
 
+    m_d3dImage->AddDirtyRect(m_imageSourceRect);
+
 Cleanup:
     if (fNeedUnlock)
     {
-        m_d3dImage->AddDirtyRect(m_imageSourceRect);
         m_d3dImage->Unlock();
     }
 
@@ -220,6 +206,21 @@ void Render::Interop::DXGIHelper::WritePixels(HANDLE hSharedHandle)
 
     bool fNeedUnlock = false;
 
+    if (!m_d3dImage->Dispatcher->CheckAccess())
+    {
+        if (Monitor::TryEnter(m_sharedHandleLockObj) &&
+            m_isD3DInitialized)
+        {
+            WriteToInputView(hSharedHandle);
+        }
+        goto Cleanup;
+    }
+    else
+    {
+        Monitor::Enter(m_sharedHandleLockObj);
+        WriteToInputView(hSharedHandle);
+    }
+
     m_d3dImage->Lock();
     fNeedUnlock = true;
 
@@ -242,10 +243,10 @@ void Render::Interop::DXGIHelper::WritePixels(HANDLE hSharedHandle)
 
     if (isNewSurface)
     {
-        CreateBitmap(pDXGISurface);
+        InitRenderTarget(pDXGISurface);
     }
 
-    RenderToDXGI(hSharedHandle, pDXGISurface);
+    RenderToDXGI(m_pInputView, pDXGISurface);
 
     // Produce the surface
     m_BAProducer->Enqueue(pDXGISurface, NULL, NULL, SURFACE_QUEUE_FLAG_DO_NOT_WAIT);
@@ -274,10 +275,11 @@ void Render::Interop::DXGIHelper::WritePixels(HANDLE hSharedHandle)
     // Flush the AB queue - use "do not wait" here, we'll block at the top of the *next* call if we need to
     m_ABProducer->Flush(SURFACE_QUEUE_FLAG_DO_NOT_WAIT, NULL);
 
+    m_d3dImage->AddDirtyRect(m_imageSourceRect);
+
 Cleanup:
     if (fNeedUnlock)
     {
-        m_d3dImage->AddDirtyRect(m_imageSourceRect);
         m_d3dImage->Unlock();
     }
 
@@ -288,6 +290,8 @@ Cleanup:
 
     ReleaseInterface(pDXGISurface);
     ReleaseInterface(pUnkDXGISurface);
+
+    Monitor::Exit(m_sharedHandleLockObj);
 }
 
 bool Render::Interop::DXGIHelper::Initialize()
@@ -336,7 +340,16 @@ bool Render::Interop::DXGIHelper::InitD3D()
         {
             return false;
         }
+        if (!InitD3D10())
+        {
+            return false;
+        }
         if (!InitD3D11())
+        {
+            return false;
+        }
+
+        if (!SUCCEEDED(InitVideoProcessor()))
         {
             return false;
         }
@@ -382,11 +395,6 @@ bool Render::Interop::DXGIHelper::InitD3D9()
     {
         return false;
     }
-    //IFF(m_pDevice9Ex->SetRenderState(D3DRS_LIGHTING, FALSE));
-    //IFF(m_pDevice9Ex->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, FALSE));
-    //IFF(m_pDevice9Ex->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE));
-    //IFF(m_pDevice9Ex->SetRenderState(D3DRS_ZENABLE, D3DZB_FALSE));
-    //IFF(m_pDevice9Ex->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR));
 
     return true;
 }
@@ -440,14 +448,14 @@ bool Render::Interop::DXGIHelper::InitSurfaces()
             pin_ptr<ISurfaceProducer*> pinm_BAProducer = &m_BAProducer;
             ISurfaceProducer** ppm_BAProducer = pinm_BAProducer;
 
-            IFC(m_BAQueue->OpenProducer(m_pD3D11Device, ppm_BAProducer));
+            IFC(m_BAQueue->OpenProducer(m_pD3D10Device, ppm_BAProducer));
         }
 
         {
             pin_ptr<ISurfaceConsumer*> pinm_ABConsumer = &m_ABConsumer;
             ISurfaceConsumer** ppm_ABConsumer = pinm_ABConsumer;
 
-            IFC(m_ABQueue->OpenConsumer(m_pD3D11Device, ppm_ABConsumer));
+            IFC(m_ABQueue->OpenConsumer(m_pD3D10Device, ppm_ABConsumer));
         }
 
         {
@@ -482,8 +490,14 @@ void Render::Interop::DXGIHelper::CleanupD3D()
     m_isD3DInitialized = false;
     SAFE_RELEASE(m_pDevice9Ex);
     SAFE_RELEASE(m_pDirect3D9Ex);
+    SAFE_RELEASE(m_pD3D10Device);
     SAFE_RELEASE(m_pD3D11Device);
     SAFE_RELEASE(m_pD3D11DeviceContext);
+    SAFE_RELEASE(m_pDX11VideoDevice);
+    SAFE_RELEASE(m_pVideoContext);
+    SAFE_RELEASE(m_VideoProcessorEnum);
+    SAFE_RELEASE(m_pVideoProcessor);
+    SAFE_RELEASE(m_pDXGIMutex);
 }
 
 void Render::Interop::DXGIHelper::CleanupSurfaces()
@@ -499,6 +513,7 @@ void Render::Interop::DXGIHelper::CleanupSurfaces()
 
     ReleaseInterface(m_pD2D1RenderTarget);
     ReleaseInterface(m_pD2D1Bitmap);
+    ReleaseInterface(m_pOutputView);
 }
 
 void Render::Interop::DXGIHelper::SetD3DImage(D3DImage^ d3dImage)
@@ -526,81 +541,100 @@ void Render::Interop::DXGIHelper::SetupSurface(int width, int height)
     CleanupSurfaces();
     WritePixels(IntPtr::Zero);
 
-    switch (m_format)
+    if (buffer)
     {
-    case Render::Interop::RenderFormat::YV12:
-        if (yBuffer)
-        {
-            yStride = width;
-            delete yBuffer;
-            yBuffer = new char[yStride * height];
-        }
-        if (uBuffer)
-        {
-            uStride = (width >> 1);
-            delete uBuffer;
-            uBuffer = new char[uStride * (height >> 1)];
-        }
-        if (vBuffer)
-        {
-            vStride = (width >> 1);
-            delete vBuffer;
-            vBuffer = new char[vStride * (height >> 1)];
-        }
-        break;
-    case Render::Interop::RenderFormat::NV12:
-        if (yBuffer)
-        {
-            yStride = width;
-            delete yBuffer;
-            yBuffer = new char[yStride * height];
-        }
-        if (uvBuffer)
-        {
-            uvStride = (width);
-            delete uvBuffer;
-            uvBuffer = new char[uvStride * (height >> 1)];
-        }
-        delete uvBuffer;
-        break;
-    case Render::Interop::RenderFormat::B8G8R8A8:
-        if (buffer)
-        {
-            stride = width << 2;
-            delete buffer;
-            buffer = new char[stride * height];
-        }
-        break;
-    default:
-        break;
+        delete buffer;
     }
+    stride = width << 2;
+    buffer = new char[stride * height];
 }
 
 bool Render::Interop::DXGIHelper::InitD3D11()
 {
+    HRESULT hr = S_OK;
     // D3D11 Device
-    D3D_FEATURE_LEVEL featureLevels[] = {
-        D3D_FEATURE_LEVEL_11_1
+    UINT createDeviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
+    D3D_DRIVER_TYPE driverTypes[] =
+    {
+        D3D_DRIVER_TYPE_HARDWARE,
+        D3D_DRIVER_TYPE_WARP,
+        D3D_DRIVER_TYPE_REFERENCE,
+    };
+    UINT numDriverTypes = ARRAYSIZE(driverTypes);
+    D3D_FEATURE_LEVEL featureLevels[] =
+    {
+        D3D_FEATURE_LEVEL_11_1,
+        D3D_FEATURE_LEVEL_11_0,
+        D3D_FEATURE_LEVEL_10_1,
+        D3D_FEATURE_LEVEL_10_0,
     };
     UINT numFeatureLevels = ARRAYSIZE(featureLevels);
     pin_ptr<ID3D11Device*> ppD3D11Device = &m_pD3D11Device;
     pin_ptr<ID3D11DeviceContext*> ppD3D11DeviceContext = &m_pD3D11DeviceContext;
-    IFF(D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL,
-        D3D11_CREATE_DEVICE_FLAG::D3D11_CREATE_DEVICE_BGRA_SUPPORT,
-        featureLevels, numFeatureLevels, D3D11_SDK_VERSION, ppD3D11Device,
-        NULL, ppD3D11DeviceContext));
-    return true;
+    pin_ptr<D3D_FEATURE_LEVEL> pfeatureLevel = &m_featureLevel;
+
+    for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; ++driverTypeIndex)
+    {
+        hr = D3D11CreateDevice(NULL, driverTypes[driverTypeIndex], NULL, createDeviceFlags, featureLevels, numFeatureLevels,
+            D3D11_SDK_VERSION, ppD3D11Device, pfeatureLevel, ppD3D11DeviceContext);
+
+        if (SUCCEEDED(hr))
+        {
+            m_driverType = driverTypes[driverTypeIndex];
+            break;
+        }
+    }
+
+Cleanup:
+    return SUCCEEDED(hr);
 }
 
-void Render::Interop::DXGIHelper::CreateBitmap(IDXGISurface* pDXGISurface)
+bool Render::Interop::DXGIHelper::InitD3D10()
 {
-    SAFE_RELEASE(m_pD2D1RenderTarget);
-    SAFE_RELEASE(m_pD2D1Bitmap);
+    HRESULT hr;
+    UINT		DeviceFlags = D3D10_CREATE_DEVICE_BGRA_SUPPORT;
+    //DWORD		dwShaderFlags = D3D10_SHADER_ENABLE_STRICTNESS;
+
+#ifdef _DEBUG
+                    // To debug DirectX, uncomment the following lines:
+
+                    //DeviceFlags |= D3D10_CREATE_DEVICE_DEBUG;
+                    //dwShaderFlags	|= D3D10_SHADER_DEBUG;
+#endif
+
+    {
+        pin_ptr<ID3D10Device1*> pinD3D10Device = &m_pD3D10Device;
+        ID3D10Device1** ppD3D10Device = pinD3D10Device;
+
+        if (FAILED(hr = D3D10CreateDevice1(NULL, D3D10_DRIVER_TYPE_HARDWARE, NULL,
+            DeviceFlags, D3D10_FEATURE_LEVEL_10_0, D3D10_1_SDK_VERSION, ppD3D10Device)))
+        {
+            return hr;
+        }
+    }
+
+    D3D10_VIEWPORT vp;
+    vp.Width = WIDTH;
+    vp.Height = HEIGHT;
+    vp.MinDepth = 0.0f;
+    vp.MaxDepth = 1.0f;
+    vp.TopLeftX = 0;
+    vp.TopLeftY = 0;
+    m_pD3D10Device->RSSetViewports(1, &vp);
+
+    return SUCCEEDED(hr);
+}
+
+HRESULT Render::Interop::DXGIHelper::InitRenderTarget(IDXGISurface* pDXGISurface)
+{
+    HRESULT hr = S_OK;
+
+#pragma region D2DRenderTarget
 
     ID2D1Factory* pD2D1Factory = NULL;
-    D2D1CreateFactory(
+    IFC(D2D1CreateFactory(
         D2D1_FACTORY_TYPE::D2D1_FACTORY_TYPE_SINGLE_THREADED,
-        &pD2D1Factory);
+        &pD2D1Factory));
     D2D1_PIXEL_FORMAT pixelFormat{};
     pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
     pixelFormat.alphaMode = D2D1_ALPHA_MODE_PREMULTIPLIED;
@@ -612,22 +646,56 @@ void Render::Interop::DXGIHelper::CreateBitmap(IDXGISurface* pDXGISurface)
     renderTargetProperties.usage = D2D1_RENDER_TARGET_USAGE_NONE;
     renderTargetProperties.minLevel = D2D1_FEATURE_LEVEL_DEFAULT;
     pin_ptr<ID2D1RenderTarget*> ppD2D1RenderTarget = &m_pD2D1RenderTarget;
-    pD2D1Factory->CreateDxgiSurfaceRenderTarget(pDXGISurface,
-        &renderTargetProperties, ppD2D1RenderTarget);
-    SAFE_RELEASE(pD2D1Factory);
+    IFC(pD2D1Factory->CreateDxgiSurfaceRenderTarget(pDXGISurface,
+        &renderTargetProperties, ppD2D1RenderTarget));
 
     FLOAT dpiX, dpiY;
     m_pD2D1RenderTarget->GetDpi(&dpiX, &dpiY);
     D2D1_BITMAP_PROPERTIES properties{};
     properties.pixelFormat = {
-        m_dxgi_format,
-        D2D1_ALPHA_MODE_UNKNOWN
+        DXGI_FORMAT_B8G8R8A8_UNORM,
+        D2D1_ALPHA_MODE_PREMULTIPLIED
     };
     properties.dpiX = dpiX;
     properties.dpiY = dpiY;
     pin_ptr<ID2D1Bitmap*> ppD2D1Bitmap = &m_pD2D1Bitmap;
     D2D1_SIZE_U size = { (UINT32)m_width, (UINT32)m_height };
-    m_pD2D1RenderTarget->CreateBitmap(size, properties, ppD2D1Bitmap);
+    IFC(m_pD2D1RenderTarget->CreateBitmap(size, properties, ppD2D1Bitmap));
+
+#pragma endregion
+
+#pragma region OutputView
+
+    IDXGIResource* pDXGIResource = NULL;
+    IFC(pDXGISurface->QueryInterface(__uuidof(IDXGIResource), (void**)&pDXGIResource));
+
+    HANDLE sharedHandle;
+    IFC(pDXGIResource->GetSharedHandle(&sharedHandle));
+
+    IUnknown* tempResource11 = NULL;
+    IFC(m_pD3D11Device->OpenSharedResource(sharedHandle, __uuidof(ID3D11Resource), (void**)(&tempResource11)));
+
+    ID3D11Texture2D* pOutputResource = NULL;
+    IFC(tempResource11->QueryInterface(__uuidof(ID3D11Texture2D), (void**)(&pOutputResource)));
+
+    D3D11_VIDEO_PROCESSOR_OUTPUT_VIEW_DESC OutputViewDesc{};
+    OutputViewDesc.ViewDimension = D3D11_VPOV_DIMENSION_TEXTURE2D;
+    OutputViewDesc.Texture2D.MipSlice = 0;
+    pin_ptr<ID3D11VideoProcessorOutputView*> ppOutputView = &m_pOutputView;
+    IFC(m_pDX11VideoDevice->CreateVideoProcessorOutputView(
+        pOutputResource,
+        m_VideoProcessorEnum,
+        &OutputViewDesc,
+        ppOutputView));
+
+#pragma endregion
+
+Cleanup:
+    ReleaseInterface(pD2D1Factory);
+    ReleaseInterface(pDXGIResource);
+    ReleaseInterface(tempResource11);
+    ReleaseInterface(pOutputResource);
+    return hr;
 }
 
 void Render::Interop::DXGIHelper::RenderToDXGI(IntPtr buffer, IDXGISurface* pDXGISurface)
@@ -645,29 +713,8 @@ void Render::Interop::DXGIHelper::RenderToDXGI(IntPtr buffer, IDXGISurface* pDXG
         return;
     }
     m_pD2D1RenderTarget->BeginDraw();
-    switch (m_format)
-    {
-    case Render::Interop::RenderFormat::NV12:
-    {
-        libyuv::ARGBToNV12((uint8_t*)buffer.ToPointer(), m_width << 2,
-            (uint8_t*)yBuffer, yStride,
-            (uint8_t*)uvBuffer, uvStride,
-            m_width, m_height);
-        D2D1_RECT_U yRect = { 0, 0, (UINT32)m_width, (UINT32)m_height };
-        m_pD2D1Bitmap->CopyFromMemory(&yRect, yBuffer, yStride);
-        D2D1_RECT_U uvRect = { 0, (UINT32)m_height, (UINT32)m_width, (UINT32)m_height + ((UINT32)m_height >> 1) };
-        m_pD2D1Bitmap->CopyFromMemory(&uvRect, uvBuffer, uvStride);
-    }
-        break;
-    case Render::Interop::RenderFormat::B8G8R8A8:
-    {
-        D2D1_RECT_U rect = { 0, 0, (UINT32)m_width, (UINT32)m_height };
-        m_pD2D1Bitmap->CopyFromMemory(&rect, buffer.ToPointer(), m_width << 2);
-    }
-        break;
-    default:
-        break;
-    }
+    D2D1_RECT_U rect = { 0, 0, (UINT32)m_width, (UINT32)m_height };
+    m_pD2D1Bitmap->CopyFromMemory(&rect, buffer.ToPointer(), m_width << 2);
     m_pD2D1RenderTarget->DrawBitmap(m_pD2D1Bitmap);
     m_pD2D1RenderTarget->EndDraw();
 }
@@ -689,87 +736,132 @@ void Render::Interop::DXGIHelper::RenderToDXGI(IntPtr yBuffer, UInt32 yStride, I
         return;
     }
     m_pD2D1RenderTarget->BeginDraw();
-    switch (m_format)
-    {
-    case Render::Interop::RenderFormat::NV12:
-    {
-        libyuv::I420ToNV12((uint8_t*)yBuffer.ToPointer(), yStride,
-            (uint8_t*)uBuffer.ToPointer(), uStride,
-            (uint8_t*)vBuffer.ToPointer(), vStride,
-            (uint8_t*)this->yBuffer, this->yStride,
-            (uint8_t*)this->uvBuffer, this->uvStride,
-            m_width, m_height);
-        D2D1_RECT_U yRect = { 0, 0, (UINT32)m_width, (UINT32)m_height };
-        m_pD2D1Bitmap->CopyFromMemory(&yRect, this->yBuffer, this->yStride);
-        D2D1_RECT_U uvRect = { 0, (UINT32)m_height, (UINT32)m_width, (UINT32)m_height + ((UINT32)m_height >> 1) };
-        m_pD2D1Bitmap->CopyFromMemory(&uvRect, this->uvBuffer, this->uvStride);
-    }
-        break;
-    case Render::Interop::RenderFormat::B8G8R8A8:
-    {
-        libyuv::I420ToARGB((uint8_t*)yBuffer.ToPointer(), yStride,
-            (uint8_t*)uBuffer.ToPointer(), uStride,
-            (uint8_t*)vBuffer.ToPointer(), vStride,
-            (uint8_t*)this->buffer, this->stride,
-            m_width, m_height);
-        D2D1_RECT_U rect = { 0, 0, (UINT32)m_width, (UINT32)m_height };
-        m_pD2D1Bitmap->CopyFromMemory(&rect, this->buffer, this->stride);
-    }
-        break;
-    default:
-        break;
-    }
+    libyuv::I420ToARGB((uint8_t*)yBuffer.ToPointer(), yStride,
+        (uint8_t*)uBuffer.ToPointer(), uStride,
+        (uint8_t*)vBuffer.ToPointer(), vStride,
+        (uint8_t*)this->buffer, this->stride,
+        m_width, m_height);
+    D2D1_RECT_U rect = { 0, 0, (UINT32)m_width, (UINT32)m_height };
+    m_pD2D1Bitmap->CopyFromMemory(&rect, this->buffer, this->stride);
     m_pD2D1RenderTarget->DrawBitmap(m_pD2D1Bitmap);
     m_pD2D1RenderTarget->EndDraw();
 }
 
-void Render::Interop::DXGIHelper::RenderToDXGI(HANDLE hSharedHandle, IDXGISurface* pDXGISurface)
+void Render::Interop::DXGIHelper::RenderToDXGI(ID3D11VideoProcessorInputView* pInputView, IDXGISurface* pDXGISurface)
 {
-    IUnknown* pSurface = NULL;
-    m_pD3D11Device->OpenSharedResource(hSharedHandle, __uuidof(ID3D11Texture2D), (void**)&pSurface);
-    CopySurface(pDXGISurface, pSurface, m_width, m_height);
+    HRESULT hr = S_OK;
+
+    if (nullptr == pInputView)
+    {
+        goto Cleanup;
+    }
+
+    RECT rect = { 0 };
+    rect.right = m_width;
+    rect.bottom = m_height;
+
+    D3D11_VIDEO_PROCESSOR_STREAM StreamData{};
+    StreamData.Enable = TRUE;
+    StreamData.OutputIndex = 0;
+    StreamData.InputFrameOrField = 0;
+    StreamData.PastFrames = 0;
+    StreamData.FutureFrames = 0;
+    StreamData.ppPastSurfaces = NULL;
+    StreamData.ppFutureSurfaces = NULL;
+    StreamData.pInputSurface = pInputView;
+    StreamData.ppPastSurfacesRight = NULL;
+    StreamData.ppFutureSurfacesRight = NULL;
+    StreamData.pInputSurfaceRight = NULL;
+
+    m_pVideoContext->VideoProcessorSetStreamSourceRect(m_pVideoProcessor, 0, true, &rect);
+    m_pVideoContext->VideoProcessorSetStreamFrameFormat(m_pVideoProcessor, 0, D3D11_VIDEO_FRAME_FORMAT_PROGRESSIVE);
+    IFC(m_pVideoContext->VideoProcessorBlt(m_pVideoProcessor, m_pOutputView, 0, 1, &StreamData));
+
+Cleanup:
+    return;
 }
 
-HRESULT Render::Interop::DXGIHelper::CopySurface(IUnknown* pDst, IUnknown* pSrc, UINT width, UINT height)
+void Render::Interop::DXGIHelper::WriteToInputView(HANDLE hSharedHandle)
 {
-    HRESULT hr;
+    HRESULT hr = S_OK;
 
-    D3D11_BOX UnitBox = { 0, 0, 0, width, height, 1 };
+    ID3D11Texture2D* pD3D11Texture2D = NULL;
 
-    ID3D11DeviceContext* pContext = m_pD3D11DeviceContext;
-    ID3D11Resource* pSrcRes = NULL;
-    ID3D11Resource* pDstRes = NULL;
-
-    if (FAILED(hr = pDst->QueryInterface(__uuidof(ID3D11Resource), (void**)&pDstRes)))
+    if (nullptr == hSharedHandle)
     {
-        goto end;
+        goto Cleanup;
     }
 
-    if (FAILED(hr = pSrc->QueryInterface(__uuidof(ID3D11Resource), (void**)&pSrcRes)))
+    SAFE_RELEASE(m_pDXGIMutex);
+
+    IFC(m_pD3D11Device->OpenSharedResource(hSharedHandle, __uuidof(ID3D11Texture2D), (void**)&pD3D11Texture2D));
+    pin_ptr<IDXGIKeyedMutex*> ppDXGIMutex = &m_pDXGIMutex;
+    hr = pD3D11Texture2D->QueryInterface(__uuidof(IDXGIKeyedMutex), (void**)ppDXGIMutex);
+    if (SUCCEEDED(hr))
     {
-        goto end;
+        IFC(m_pDXGIMutex->AcquireSync(kSharedResAcquireKey, kAcquireSyncTimeout));
+        mAcquiredSharedTexture = true;
     }
 
-    pContext->CopySubresourceRegion(
-        pDstRes,
-        0,
-        0, 0, 0, //(x, y, z)
-        pSrcRes,
-        0,
-        &UnitBox);
-end:
-    if (pSrcRes)
-    {
-        pSrcRes->Release();
-    }
-    if (pDstRes)
-    {
-        pDstRes->Release();
-    }
-    if (pContext)
-    {
-        pContext->Release();
+    D3D11_VIDEO_PROCESSOR_INPUT_VIEW_DESC InputViewDesc;
+    InputViewDesc.FourCC = 0;
+    InputViewDesc.ViewDimension = D3D11_VPIV_DIMENSION_TEXTURE2D;
+    InputViewDesc.Texture2D.MipSlice = 0;
+    InputViewDesc.Texture2D.ArraySlice = 0;
+
+    SAFE_RELEASE(m_pInputView);
+    pin_ptr<ID3D11VideoProcessorInputView*> ppInputView = &m_pInputView;
+    IFC(m_pDX11VideoDevice->CreateVideoProcessorInputView(
+        pD3D11Texture2D,
+        m_VideoProcessorEnum,
+        &InputViewDesc,
+        ppInputView));
+
+    if (m_pDXGIMutex && mAcquiredSharedTexture) {
+        m_pDXGIMutex->ReleaseSync(kSharedResReleaseKey);
+        mAcquiredSharedTexture = false;
     }
 
+Cleanup:
+    
+    SAFE_RELEASE(pD3D11Texture2D);
+}
+
+HRESULT Render::Interop::DXGIHelper::InitVideoProcessor()
+{
+    HRESULT hr = S_OK;
+
+    if (m_VideoProcessorEnum)
+        return S_FALSE;
+
+    //create video processor
+    D3D11_VIDEO_PROCESSOR_CONTENT_DESC ContentDesc;
+    ZeroMemory(&ContentDesc, sizeof(ContentDesc));
+
+    ContentDesc.InputFrameFormat = D3D11_VIDEO_FRAME_FORMAT_PROGRESSIVE;
+    ContentDesc.InputFrameRate.Numerator = 30000;
+    ContentDesc.InputFrameRate.Denominator = 1000;
+    ContentDesc.InputWidth = m_width;
+    ContentDesc.InputHeight = m_height;
+    ContentDesc.OutputWidth = m_width;
+    ContentDesc.OutputHeight = m_height;
+    ContentDesc.OutputFrameRate.Numerator = 30000;
+    ContentDesc.OutputFrameRate.Denominator = 1000;
+
+    ContentDesc.Usage = D3D11_VIDEO_USAGE_PLAYBACK_NORMAL;
+
+    pin_ptr<ID3D11VideoDevice*> ppDX11VideoDevice = &m_pDX11VideoDevice;
+    IFC(m_pD3D11Device->QueryInterface(__uuidof(ID3D11VideoDevice), (void**)ppDX11VideoDevice));
+
+    pin_ptr<ID3D11VideoContext*> ppVideoContext = &m_pVideoContext;
+    IFC(m_pD3D11DeviceContext->QueryInterface(__uuidof(ID3D11VideoContext), (void**)ppVideoContext));
+
+    pin_ptr<ID3D11VideoProcessorEnumerator*> ppVideoProcessorEnum = &m_VideoProcessorEnum;
+    IFC(m_pDX11VideoDevice->CreateVideoProcessorEnumerator(&ContentDesc, ppVideoProcessorEnum));
+
+    pin_ptr<ID3D11VideoProcessor*> ppVideoProcessor = &m_pVideoProcessor;
+    IFC(m_pDX11VideoDevice->CreateVideoProcessor(m_VideoProcessorEnum, 0, ppVideoProcessor));
+
+Cleanup:
     return hr;
 }

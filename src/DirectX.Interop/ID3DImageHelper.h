@@ -1,8 +1,6 @@
 #pragma once
 
 #include "stdafx.h"
-#include "RenderFormat.h"
-#include "RenderMode.h"
 
 using namespace System;
 using namespace System::Windows::Interop;
