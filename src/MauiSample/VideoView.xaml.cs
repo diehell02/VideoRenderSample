@@ -35,6 +35,10 @@ public partial class VideoView : ContentView
 
     private void _videoDrawable_ImageCreated(object? sender, EventArgs e)
     {
+		if (_videoDrawable is null)
+		{
+			return;
+		}
         graphicsView.Drawable = _videoDrawable.Image;
     }
 

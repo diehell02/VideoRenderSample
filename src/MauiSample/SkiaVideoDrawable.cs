@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection.Metadata;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Maui.Graphics.Skia;
@@ -21,7 +22,7 @@ namespace MauiSample
         private Microsoft.Maui.Graphics.IImage? _image;
         private uint _width;
         private uint _height;
-        private byte[]? _buffer;
+        private IntPtr _buffer;
 
         public event EventHandler? ImageCreated;
 
@@ -51,16 +52,7 @@ namespace MauiSample
             }
             if (_sKBitmap is null)
             {
-                _sKBitmap = SKBitmap.Decode(@"C:\\Users\\cade.huang\\Pictures\\01bdce574f9e1c6ac72525aef3d5be.jpg@3000w_1l_0o_100sh.jpg");
-                //_sKBitmap = new SKBitmap((int)3000, (int)2000, SKColorType.Bgra8888, SKAlphaType.Unpremul);
-                //var bytes = File.ReadAllBytes(@"C:\\Users\\cade.huang\\Pictures\\01bdce574f9e1c6ac72525aef3d5be.jpg@3000w_1l_0o_100sh.jpg");
-                //unsafe
-                //{
-                //    fixed (byte* p = bytes)
-                //    {
-                //        _sKBitmap?.SetPixels((nint)p);
-                //    }
-                //}
+                _sKBitmap = new SKBitmap((int)width, (int)height, SKColorType.Rgb888x, SKAlphaType.Unknown);
             }
             else if (needResize)
             {
@@ -78,15 +70,19 @@ namespace MauiSample
             }
             if (needResize)
             {
-                _buffer = new byte[width * height << 2];
+                if (_buffer != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(_buffer);
+                }
+                _buffer = Marshal.AllocCoTaskMem((int)(width * height << 2));
             }
         }
 
         public void DrawVideoFrame(byte[] yuvFrame, uint width, uint height)
         {
             EnsureBitmap(width, height);
-            byte[] pixels = new byte[width * height * 4];
-            VideoFrameConverter.YUV2RGBA(yuvFrame, pixels, width, height);
+            VideoFrameConverter.YUV2RGBA(yuvFrame, _buffer, width, height);
+            _sKBitmap?.SetPixels(_buffer);
 
             //unsafe
             //{
@@ -147,6 +143,12 @@ namespace MauiSample
                     // Dispose managed resources.
                     _skiaImage?.Dispose();
                     _sKBitmap?.Dispose();
+                }
+
+                // Free unmanaged resources.
+                if (_buffer != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(_buffer);
                 }
 
                 // Note disposing has been done.
