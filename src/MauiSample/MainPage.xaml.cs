@@ -15,8 +15,18 @@ namespace MauiSample
 #endif
         }
 
-        private void VideoGrid_Loaded(object? sender, EventArgs e)
+        private async Task LoadMauiAsset()
         {
+            using var stream = await FileSystem.OpenAppPackageFileAsync("Config.json");
+            using var reader = new StreamReader(stream);
+
+            var contents = reader.ReadToEnd();
+            Render.Source.Config.Reload(contents);
+        }
+
+        private async void VideoGrid_Loaded(object? sender, EventArgs e)
+        {
+            await LoadMauiAsset();
             int count = Config.Instance.VideoViewNumber;
             int itemCount = 1;
 

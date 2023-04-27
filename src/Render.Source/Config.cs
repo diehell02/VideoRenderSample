@@ -63,6 +63,56 @@ namespace Render.Source
             }
         }
 
+        public static void Reload(string content)
+        {
+            try
+            {
+                Config? config = JsonSerializer.Deserialize<Config>(content);
+                if (config is null)
+                {
+                    Instance = CreateDefault();
+                }
+                else
+                {
+                    Instance = config;
+                }
+            }
+            catch
+            {
+                Instance = CreateDefault();
+            }
+            if (Instance.LocalYuvFile?.YuvPath == null)
+            {
+                Instance.LocalYuvFile = null;
+            }
+            Instance.LocalYuvFile?.Init();
+            if (Instance.YuvFiles is null)
+            {
+                return;
+            }
+            Instance.YuvFiles.Sort((x, y) =>
+            {
+                int xArea = x.FrameWidth * x.FrameHeight;
+                int yArea = y.FrameHeight * y.FrameWidth;
+                if (xArea < yArea)
+                {
+                    return -1;
+                }
+                else if (yArea == xArea)
+                {
+                    return 0;
+                }
+                else
+                {
+                    return 1;
+                }
+            });
+            foreach (var yuvFile in Instance.YuvFiles)
+            {
+                yuvFile.Init();
+            }
+        }
+
         public static Config CreateDefault()
         {
             return new Config()

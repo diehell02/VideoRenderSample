@@ -1,0 +1,16 @@
+{
+  "YuvFiles": [
+    {
+      "YuvPath": "1920x1080.yuv",
+      "FrameWidth": 1920,
+      "FrameHeight": 1080,
+      "FrameLength": 100
+    }
+  ],
+  "LocalYuvFile": {},
+  "FramePerSecond": 30,
+  "IsMultipleThread": true,
+  "IsMultipleScreen": false,
+  "AutoChangeLocaltion": false,
+  "VideoViewNumber": 1
+}

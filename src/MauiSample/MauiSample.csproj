@@ -36,6 +36,9 @@
 	  <CreatePackage>false</CreatePackage>
 	  <MtouchHttpClientHandler>HttpClientHandler</MtouchHttpClientHandler>
 	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net6.0-maccatalyst|AnyCPU'">
+	  <CreatePackage>false</CreatePackage>
+	</PropertyGroup>
 	<ItemGroup>
 		<!-- App Icon -->
 		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
@@ -67,5 +70,20 @@
 	    <ReferenceSourceTarget>ProjectReference</ReferenceSourceTarget>
 	  </ProjectReference>
 	</ItemGroup>
+
+	<!-- Workaround for https://github.com/dotnet/maui/issues/7272 -->
+	<ItemGroup>
+	  <None Remove="Resources\Raw\Config.json" />
+	</ItemGroup>
+	<ItemGroup>
+	  <BundleResource Include="Resources\Raw\Config.json">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </BundleResource>
+	</ItemGroup>
+  <Target Name="_SetPublishFolderTypeNoneOnDocFileItems" BeforeTargets="_ComputePublishLocation">
+    <ItemGroup>
+      <ResolvedFileToPublish Update="@(ResolvedFileToPublish)" Condition="'%(ResolvedFileToPublish.Extension)' == '.json' And '%(ResolvedFileToPublish.PublishFolderType)' == ''" PublishFolderType="None" />
+    </ItemGroup>
+  </Target>
 
 </Project>
