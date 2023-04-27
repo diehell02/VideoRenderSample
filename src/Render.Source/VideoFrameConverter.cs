@@ -43,18 +43,11 @@ namespace Render.Source
                     byte U = Marshal.ReadByte(source, (int)(ySize + offset + xby2));
                     byte V = Marshal.ReadByte(source, (int)(ySize + uSize + offset + xby2));
 
-                    // Correct Y to allow for the fact that it is [16..235] and not [0..255]
-                    Y -= 16;
-                    U -= 128;
-                    V -= 128;
-                    int R = 1191 * Y + (1634 * V) >> 10;
-                    int G = 1191 * Y - 401 * U - (832 * V) >> 10;
-                    int B = 1191 * Y + 2065 * U >> 10;
-
-                    Marshal.WriteByte(dest, index++, (byte)(B < 0 ? 0 : B > FF ? FF : B));
-                    Marshal.WriteByte(dest, index++, (byte)(G < 0 ? 0 : G > FF ? FF : G));
-                    Marshal.WriteByte(dest, index++, (byte)(R < 0 ? 0 : R > FF ? FF : R));
-                    index++;
+                    ConvertYUVToRGBA(Y, U, V, out byte r, out byte g, out byte b, out byte a);
+                    Marshal.WriteByte(dest, index++, b);
+                    Marshal.WriteByte(dest, index++, g);
+                    Marshal.WriteByte(dest, index++, r);
+                    Marshal.WriteByte(dest, index++, a);
                 }
             }
         }
@@ -84,18 +77,11 @@ namespace Render.Source
                     byte U = source[ySize + offset + xby2];
                     byte V = source[ySize + uSize + offset + xby2];
 
-                    // Correct Y to allow for the fact that it is [16..235] and not [0..255]
-                    Y -= 16;
-                    U -= 128;
-                    V -= 128;
-                    int R = 1191 * Y + (1634 * V) >> 10;
-                    int G = 1191 * Y - 401 * U - (832 * V) >> 10;
-                    int B = 1191 * Y + 2065 * U >> 10;
-
-                    Marshal.WriteByte(dest, index++, (byte)(B < 0 ? 0 : B > FF ? FF : B));
-                    Marshal.WriteByte(dest, index++, (byte)(G < 0 ? 0 : G > FF ? FF : G));
-                    Marshal.WriteByte(dest, index++, (byte)(R < 0 ? 0 : R > FF ? FF : R));
-                    index++;
+                    ConvertYUVToRGBA(Y, U, V, out byte r, out byte g, out byte b, out byte a);
+                    Marshal.WriteByte(dest, index++, b);
+                    Marshal.WriteByte(dest, index++, g);
+                    Marshal.WriteByte(dest, index++, r);
+                    Marshal.WriteByte(dest, index++, a);
                 }
             }
         }
@@ -128,18 +114,11 @@ namespace Render.Source
                     // the buffer we fill up which we then fill the bitmap with
                     //MemoryStream intBuffer = new MemoryStream();
 
-                    // Correct Y to allow for the fact that it is [16..235] and not [0..255]
-                    Y -= 16;
-                    U -= 128;
-                    V -= 128;
-                    int R = 1191 * Y + (1634 * V) >> 10;
-                    int G = 1191 * Y - 401 * U - (832 * V) >> 10;
-                    int B = 1191 * Y + 2065 * U >> 10;
-
-                    dest[index++] = (byte)(B < 0 ? 0 : B > FF ? FF : B);
-                    dest[index++] = (byte)(G < 0 ? 0 : G > FF ? FF : G);
-                    dest[index++] = (byte)(R < 0 ? 0 : R > FF ? FF : R);
-                    index++;
+                    ConvertYUVToRGBA(Y, U, V, out byte r, out byte g, out byte b, out byte a);
+                    dest[index++] = b;
+                    dest[index++] = g;
+                    dest[index++] = r;
+                    dest[index++] = a;
                 }
             }
         }
@@ -169,20 +148,28 @@ namespace Render.Source
                     short U = source[ySize + offset + xby2];
                     short V = source[ySize + uSize + offset + xby2];
 
-                    // Correct Y to allow for the fact that it is [16..235] and not [0..255]
-                    Y -= 16;
-                    U -= 128;
-                    V -= 128;
-                    int R = 1191 * Y + (1634 * V) >> 10;
-                    int G = 1191 * Y - 401 * U - (832 * V) >> 10;
-                    int B = 1191 * Y + 2065 * U >> 10;
-
-                    dest[index++] = (byte)(B < 0 ? 0 : B > FF ? FF : B);
-                    dest[index++] = (byte)(G < 0 ? 0 : G > FF ? FF : G);
-                    dest[index++] = (byte)(R < 0 ? 0 : R > FF ? FF : R);
-                    dest[index++] = FF;
+                    ConvertYUVToRGBA(Y, U, V, out byte r, out byte g, out byte b, out byte a);
+                    dest[index++] = b;
+                    dest[index++] = g;
+                    dest[index++] = r;
+                    dest[index++] = a;
                 }
             }
+        }
+
+        private static void ConvertYUVToRGBA(short Y, short U, short V, out byte R, out byte G, out byte B, out byte A)
+        {
+            // Correct Y to allow for the fact that it is [16..235] and not [0..255]
+            Y -= 16;
+            U -= 128;
+            V -= 128;
+            int r = 1191 * Y + (1634 * V) >> 10;
+            int g = 1191 * Y - 401 * U - (832 * V) >> 10;
+            int b = 1191 * Y + 2065 * U >> 10;
+            B = (byte)(b < 0 ? 0 : b > FF ? FF : b);
+            G = (byte)(g < 0 ? 0 : g > FF ? FF : g);
+            R = (byte)(r < 0 ? 0 : r > FF ? FF : r);
+            A = FF;
         }
     }
 }
