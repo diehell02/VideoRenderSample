@@ -88,7 +88,7 @@ public partial class VideoView : ContentView
         {
             return;
         }
-        VideoFrameConverter.YUV2RGBA(videoFrame.YPtr, _buffer, _width, _height);
+        VideoFrameConverter.I420ToARGB(videoFrame.YPtr, _buffer, _width, _height);
         _sKBitmap?.SetPixels(_buffer);
         canvas.DrawBitmap(_sKBitmap, canvas.DeviceClipBounds);
         _videoFrameQueue.PutBack(videoFrame);

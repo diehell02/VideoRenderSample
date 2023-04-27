@@ -14,6 +14,8 @@ namespace Render.Source
 {
     public class VideoFrameConverter
     {
+        #region C#
+
         const byte FF = 0xFF;
 
         // This snippet is based almost entirely on Neil Townsend's answer at: https://stackoverflow.com/questions/9325861/converting-yuv-rgbimage-processing-yuv-during-onpreviewframe-in-android
@@ -171,5 +173,34 @@ namespace Render.Source
             R = (byte)(r < 0 ? 0 : r > FF ? FF : r);
             A = FF;
         }
+
+        #endregion
+
+        #region libyuv
+
+        public static unsafe void I420ToARGB(IntPtr source, IntPtr dest, uint imageWidth, uint imageHeight)
+        {
+            int width = (int)imageWidth;
+            int height = (int)imageHeight;
+            int size_y = width * height;
+            int size_u = size_y >> 2;
+            int size_v = size_u;
+            byte* src_y = (byte*)source.ToPointer();
+            int src_stride_y = width;
+            byte* src_u = src_y + size_y;
+            int src_stride_u = width >> 1;
+            byte* src_v = src_u + size_u;
+            int src_stride_v = src_stride_u;
+            byte* dst_argb = (byte*)dest.ToPointer();
+            int dst_stride_argb = width << 2;
+            _ = Lennox.LibYuvSharp.LibYuv.I420ToARGB(src_y, src_stride_y,
+                src_u, src_stride_u,
+                src_v, src_stride_v,
+                dst_argb,
+                dst_stride_argb,
+                width, height);
+        }
+
+        #endregion
     }
 }
