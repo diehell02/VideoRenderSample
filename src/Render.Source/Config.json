@@ -1,9 +1,9 @@
 {
   "YuvFiles": [
     {
-      "YuvPath": "240x134.yuv",
-      "FrameWidth": 240,
-      "FrameHeight": 134,
+      "YuvPath": "1920x1080.yuv",
+      "FrameWidth": 1920,
+      "FrameHeight": 1080,
       "FrameLength": 100
     }
   ],

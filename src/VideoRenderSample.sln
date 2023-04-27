@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32526.322
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Interop", "Render.Interop\Render.Interop.vcxproj", "{B4D924B6-04C2-45EB-B26C-EF9854EC3866}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Render.Interop", "Render.Interop\Render.Interop.vcxproj", "{B4D924B6-04C2-45EB-B26C-EF9854EC3866}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RenderIndexMapGenerator", "RenderIndexMapGenerator\RenderIndexMapGenerator.csproj", "{86986034-DE91-45D8-876D-54417D450835}"
 EndProject
@@ -33,6 +33,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Avalonia", "Avalonia", "{DD6D872D-EA59-4592-8978-819F346472C5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AvaloniaSample", "AvaloniaSample\AvaloniaSample.csproj", "{8F04A636-9359-4674-9F50-EF53D2C63CCF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "MAUI", "MAUI", "{CF8EAFD8-4E34-49C1-BF76-095AC7AC84D8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -186,6 +188,7 @@ Global
 		{2790EC5C-E177-4A4C-8935-86EEDB725D51} = {5926A040-8354-4D99-9C7B-0BE9A5740C3D}
 		{0D046DEF-9F87-42A3-867E-F76507A64B73} = {BA309291-FC39-4179-BC7C-F0A89F93B893}
 		{8F04A636-9359-4674-9F50-EF53D2C63CCF} = {DD6D872D-EA59-4592-8978-819F346472C5}
+		{3EA92A97-37C5-45C9-AF7F-B8A72711D817} = {CF8EAFD8-4E34-49C1-BF76-095AC7AC84D8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {57D9ABDF-BD99-4351-8CEA-DC2F50AC5416}
