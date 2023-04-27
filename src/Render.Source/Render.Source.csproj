@@ -19,11 +19,29 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="runtimes\" />
+    <None Remove="runtimes\win-x64\" />
+    <None Remove="runtimes\osx-x64\" />
+    <None Remove="runtimes\osx-x64\native\" />
+    <None Remove="runtimes\win-x64\native\" />
+    <None Remove="runtimes\ios-arm64\" />
+    <None Remove="runtimes\ios-arm64\native\" />
+  </ItemGroup>
+  <ItemGroup>
     <None Update="Config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Lennox.LibYuvSharp" Version="1.1.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="runtimes\" />
+    <Folder Include="runtimes\win-x64\" />
+    <Folder Include="runtimes\osx-x64\" />
+    <Folder Include="runtimes\osx-x64\native\" />
+    <Folder Include="runtimes\win-x64\native\" />
+    <Folder Include="runtimes\ios-arm64\" />
+    <Folder Include="runtimes\ios-arm64\native\" />
   </ItemGroup>
 </Project>
