@@ -178,6 +178,16 @@ namespace Render.Source
 
         #region libyuv
 
+        [DllImport("libyuv", SetLastError = true)]
+        private static extern unsafe int I420ToARGB(
+            IntPtr src_y, int src_stride_y,
+            IntPtr src_u, int src_stride_u,
+            IntPtr src_v, int src_stride_v,
+            IntPtr dst_argb,
+            int dst_stride_argb,
+            int width, int height);
+
+
         public static unsafe void I420ToARGB(IntPtr source, IntPtr dest, uint imageWidth, uint imageHeight)
         {
             int width = (int)imageWidth;
@@ -185,15 +195,15 @@ namespace Render.Source
             int size_y = width * height;
             int size_u = size_y >> 2;
             int size_v = size_u;
-            byte* src_y = (byte*)source.ToPointer();
+            IntPtr src_y = source;
             int src_stride_y = width;
-            byte* src_u = src_y + size_y;
+            IntPtr src_u = src_y + size_y;
             int src_stride_u = width >> 1;
-            byte* src_v = src_u + size_u;
+            IntPtr src_v = src_u + size_u;
             int src_stride_v = src_stride_u;
-            byte* dst_argb = (byte*)dest.ToPointer();
+            IntPtr dst_argb = dest;
             int dst_stride_argb = width << 2;
-            _ = Lennox.LibYuvSharp.LibYuv.I420ToARGB(src_y, src_stride_y,
+            _ = I420ToARGB(src_y, src_stride_y,
                 src_u, src_stride_u,
                 src_v, src_stride_v,
                 dst_argb,
